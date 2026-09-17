@@ -262,6 +262,35 @@ export default class ReactFunc {
         return out
     }
 
+    /**
+     * Walk a parsed RSC object tree and return the first text content
+     * found inside a node whose `className` includes `targetClass`.
+     * Completely language-agnostic — relies only on Fluent UI design tokens.
+     */
+    private findTextByClass(node: unknown, targetClass: string): string | null {
+        if (!node || typeof node !== 'object') return null
+        if (Array.isArray(node)) {
+            for (const item of node) {
+                const res = this.findTextByClass(item, targetClass)
+                if (res) return res
+            }
+            return null
+        }
+        const record = node as Record<string, unknown>
+        if (typeof record.className === 'string' && record.className.includes(targetClass)) {
+            if (typeof record.children === 'string') return record.children
+            if (Array.isArray(record.children)) {
+                return record.children.filter(c => typeof c === 'string').join('')
+            }
+        }
+        for (const key of Object.keys(record)) {
+            if (key === 'className') continue
+            const res = this.findTextByClass(record[key], targetClass)
+            if (res) return res
+        }
+        return null
+    }
+
     // Section parsers
     private parseOffers(combined: string): ParsedOffer[] {
         try {
@@ -291,12 +320,40 @@ export default class ReactFunc {
                 // Never try future-dated offers, lol
                 const reportable = !!hash && !isCompleted && !isLocked && (date === null || date <= today)
 
+                const isExploreOnBing = offerId.toLowerCase().includes('exploreonbing')
+
+                // Top-level fields exist for dashboard-sourced offers; for RSC-only
+                // offers (e.g. Explore on Bing) they are buried inside React children
+                // nodes keyed by Fluent UI CSS class tokens.
+                let title = (obj.title as string) ?? ''
+                let description = (obj.description as string) ?? ''
+                let points = (obj.points as number) ?? (obj.pointProgressMax as number) ?? 0
+
+                if (!title) {
+                    title = this.findTextByClass(obj, 'text-globalBody2Strong') ?? ''
+                }
+                if (!description) {
+                    description = this.findTextByClass(obj, 'text-fgCtrlNeutralSecondaryRest') ?? ''
+                }
+                if (!points) {
+                    const badgeText = this.findTextByClass(obj, 'text-statusInformativeTintFg') ?? ''
+                    const m = badgeText.match(/\d+/)
+                    // In RSC flight streams, shared subtrees (such as the +10 pts badge) are often
+                    // deduplicated into reference chunks ($Lxx) and not inlined. Explore on Bing
+                    // activities always award 10 points on Rewards.
+                    points = m ? parseInt(m[0], 10) : (isExploreOnBing ? 10 : 0)
+                }
+
+                // RSC payloads may embed zero-width chars in rendered text
+                title = title.replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
+                description = description.replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
+
                 const candidate: ParsedOffer = {
                     offerId,
                     hash,
-                    title: (obj.title as string) ?? '',
-                    description: (obj.description as string) ?? '',
-                    points: (obj.points as number) ?? (obj.pointProgressMax as number) ?? 0,
+                    title: title || offerId,
+                    description,
+                    points,
                     promotionSubtype: (obj.promotionSubtype as string | null) ?? null,
                     destination: (obj.destination as string) ?? (obj.destinationUrl as string) ?? '',
                     isCompleted,
@@ -720,26 +777,35 @@ export default class ReactFunc {
                 const { id, at } = anchors[k]!
                 if (!this.isParentQuestId(id)) continue
 
-                const next = anchors[k + 1]?.at ?? combined.length
-                const region = combined.slice(at, Math.min(next, at + 3000))
+                // Find the start of the next *different* parent quest,
+                // skipping sub-anchors that belong to the same quest id.
+                let next = combined.length
+                for (let j = k + 1; j < anchors.length; j++) {
+                    if (anchors[j]!.id !== id && this.isParentQuestId(anchors[j]!.id)) {
+                        next = anchors[j]!.at
+                        break
+                    }
+                }
+                const region = combined.slice(at, Math.min(next, at + 4000))
 
                 const title =
                     region.match(/"alt":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     region.match(/"title":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     ''
 
-                const pointsMatch = region.match(/\["\+","([\d,]+)"\]/)
+                // Points badge may render as ["+","150"] or ["","150"]
+                const pointsMatch = region.match(/\["(?:|\+)","([\d,]+)"\]/)
                 const points = pointsMatch ? Number(pointsMatch[1]!.replace(/,/g, '')) : 0
-                const taskM = region.match(/(\d+)\s*\/\s*(\d+)\s*tasks/)
+                // Progress is always rendered with a slash (e.g. "1/5", "Einchecken: 1/1")
+                const taskM = region.match(/(\d+)\s*\/\s*(\d+)/)
                 const complete = !!taskM && Number(taskM[1]) >= Number(taskM[2]!) && Number(taskM[2]) > 0
 
-                // First wins for title/points
                 const prev = byId.get(id)
                 byId.set(id, {
                     offerId: id,
                     title: prev?.title || title,
-                    pointProgressMax: prev?.pointProgressMax || points,
-                    complete: prev?.complete || complete
+                    pointProgressMax: Math.max(prev?.pointProgressMax || 0, points),
+                    complete: (prev && prev.complete) || complete
                 })
             }
 

@@ -1,6 +1,7 @@
 import { BaseActivity } from '../BaseActivity'
 import type { BasePromotion, DashboardData } from '../../../interface/DashboardData'
 import { PromotionActivityRunner } from './PromotionActivityRunner'
+import { toBasePromotion } from './offerAdapter'
 
 export class MorePromotions extends BaseActivity {
     public async run(data: DashboardData): Promise<void> {
@@ -14,6 +15,15 @@ export class MorePromotions extends BaseActivity {
                     .map(promotion => [promotion.offerId, promotion as BasePromotion] as const)
             ).values()
         ]
+
+        // Append RSC-only offers (e.g. Explore on Bing) that the dashboard
+        // API did not return.  Skip dailyset items — handled by DailySet.
+        const existingIds = new Set(promotions.map(p => p.offerId))
+        for (const offer of this.bot.reactSnapshot?.reportable ?? []) {
+            if (offer.offerId.toLowerCase().includes('dailyset') || existingIds.has(offer.offerId)) continue
+            promotions.push(toBasePromotion(offer))
+            existingIds.add(offer.offerId)
+        }
 
         const pending = promotions.filter(promotion => this.isActionable(promotion))
         if (!pending.length) {

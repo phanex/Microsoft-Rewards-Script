@@ -43,7 +43,8 @@ export class PromotionActivityRunner extends BaseActivity {
             return
         }
 
-        const isSearchOnBing = name.includes('exploreonbing')
+        // Offers sourced via RSC flight chunks have name set to offerId, so check both
+        const isSearchOnBing = name.includes('exploreonbing') || offerId.toLowerCase().includes('exploreonbing')
         if (isSearchOnBing && !this.bot.config.activities.searchOnBing) {
             this.logDisabled('SearchOnBing', offerId)
             return
