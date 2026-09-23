@@ -4,6 +4,7 @@ import path from 'path'
 import { URLs } from '../../../constants/urls'
 import type { BasePromotion, Dashboard } from '../../../interface/DashboardData'
 import type { MicrosoftRewardsBot } from '../../../index'
+import { generateAiQueries } from './AiSearchQueryGenerator'
 
 interface ActivityQueries {
     title: string
@@ -71,7 +72,11 @@ export function findSearchOnBingOffer(dashboard: Dashboard, offerId: string): Ba
     return offers.find(offer => offer.offerId === offerId)
 }
 
-export async function getSearchOnBingQueries(bot: MicrosoftRewardsBot, promotion: BasePromotion): Promise<string[]> {
+export async function getSearchOnBingQueries(
+    bot: MicrosoftRewardsBot,
+    promotion: BasePromotion,
+    failedQueries?: string[]
+): Promise<string[]> {
     try {
         let activities: ActivityQueries[]
 
@@ -139,31 +144,63 @@ export async function getSearchOnBingQueries(bot: MicrosoftRewardsBot, promotion
         }
 
         // 1. Check custom dictionary first (prioritizes local offerId / localized overrides)
-        const customMatch = customActivities.find(activity => isMatch(activity.title))
-        if (customMatch?.queries.length) {
-            const shuffled = bot.utils.shuffleArray(customMatch.queries)
-            bot.logger.info(
-                bot.isMobile,
-                'SEARCH-ON-BING-QUERY',
-                `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=custom`
-            )
-            return shuffled
+        // If failedQueries were provided, this is a retry and custom match shouldn't loop indefinitely
+        if (!failedQueries?.length) {
+            const customMatch = customActivities.find(activity => isMatch(activity.title))
+            if (customMatch?.queries.length) {
+                const shuffled = bot.utils.shuffleArray(customMatch.queries)
+                bot.logger.info(
+                    bot.isMobile,
+                    'SEARCH-ON-BING-QUERY',
+                    `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=custom`
+                )
+                return shuffled
+            }
         }
 
         // 2. Check stock/remote dictionary
-        const match = activities.find(activity => isMatch(activity.title))
-        if (match?.queries.length) {
-            const shuffled = bot.utils.shuffleArray(match.queries)
-            bot.logger.info(
-                bot.isMobile,
-                'SEARCH-ON-BING-QUERY',
-                `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=${bot.config.searchOnBingLocalQueries ? 'local' : 'remote'}`
-            )
-            return shuffled
+        if (!failedQueries?.length) {
+            const match = activities.find(activity => isMatch(activity.title))
+            if (match?.queries.length) {
+                const shuffled = bot.utils.shuffleArray(match.queries)
+                bot.logger.info(
+                    bot.isMobile,
+                    'SEARCH-ON-BING-QUERY',
+                    `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=${bot.config.searchOnBingLocalQueries ? 'local' : 'remote'}`
+                )
+                return shuffled
+            }
         }
 
-        // 3. No curated match — fall back safely to the activity description and title
-        // (Avoiding mass blind sweeps to prevent triggering Bing anti-spam algorithms)
+        // 3. Optional AI query generator for localized/unhandled tasks
+        if (bot.config.experimental.aiQueryGenerator) {
+            bot.logger.info(
+                bot.isMobile,
+                'SEARCH-ON-BING-AI',
+                `Generating AI queries for "${promotion.title}" (${promotion.offerId})${failedQueries?.length ? ` | retrying without ${failedQueries.length} failed queries` : ''}`
+            )
+            const aiQueries = await generateAiQueries(
+                promotion.title ?? '',
+                promotion.description ?? '',
+                failedQueries
+            )
+            if (aiQueries.length > 0) {
+                bot.logger.info(
+                    bot.isMobile,
+                    'SEARCH-ON-BING-AI',
+                    `Received ${aiQueries.length} AI queries for "${promotion.title}" | queries=${JSON.stringify(aiQueries)}`,
+                    'cyan'
+                )
+                return aiQueries
+            }
+            bot.logger.warn(
+                bot.isMobile,
+                'SEARCH-ON-BING-AI',
+                `AI query generator returned 0 queries, falling back to heuristics`
+            )
+        }
+
+        // 4. No curated/AI match — fall back safely to the activity description and title
         const fallback = fallbackQueries(promotion)
         bot.logger.info(
             bot.isMobile,

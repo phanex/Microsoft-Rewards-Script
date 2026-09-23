@@ -6,6 +6,7 @@ import {
     getSearchOnBingQueries,
     recordFailedSearchOnBing
 } from './SearchOnBingShared'
+import { saveSuccessfulQuery } from './AiSearchQueryGenerator'
 import { URLs } from '../../../constants/urls'
 
 import type { BasePromotion } from '../../../interface/DashboardData'
@@ -39,8 +40,23 @@ export class SearchOnBing extends BaseActivity {
                 return
             }
 
-            const queries = await getSearchOnBingQueries(this.bot, promotion)
+            let queries = await getSearchOnBingQueries(this.bot, promotion)
             await this.searchBing(page, queries, promotion)
+
+            // If not completed and AI query generator is enabled, attempt 1 retry with alternative AI queries
+            if (!this.success && this.bot.config.experimental.aiQueryGenerator) {
+                this.bot.logger.info(
+                    this.bot.isMobile,
+                    'SEARCH-ON-BING-AI',
+                    `Initial queries did not complete offer ${offerId}, requesting alternative AI queries...`
+                )
+                const retryQueries = await getSearchOnBingQueries(this.bot, promotion, queries)
+                const newQueries = retryQueries.filter(q => !queries.includes(q))
+                if (newQueries.length > 0) {
+                    await this.searchBing(page, newQueries, promotion)
+                    queries = [...queries, ...newQueries]
+                }
+            }
 
             if (this.success) {
                 this.bot.logger.info(
@@ -128,6 +144,15 @@ export class SearchOnBing extends BaseActivity {
                         `SearchOnBing activity completed | pointsGained=${this.gainedPoints} | currentBalance=${newBalance} | query="${query}" | offerProgress=${offerProgress}`,
                         'green'
                     )
+                    if (this.bot.config.experimental.aiQueryGenerator) {
+                        saveSuccessfulQuery(offerId, promotion.title ?? '', query)
+                        this.bot.logger.info(
+                            this.bot.isMobile,
+                            'SEARCH-ON-BING-AI',
+                            `Persisted verified working query "${query}" to custom.json for ${offerId}`,
+                            'cyan'
+                        )
+                    }
                     return
                 }
 
