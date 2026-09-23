@@ -3,8 +3,8 @@ name: Build and Push Docker Image
 on:
     push:
         branches:
+            - my-release
             - v4
-            - fix/earn-tab-and-explore-on-bing
             - main
         paths-ignore:
             - '**.md'
