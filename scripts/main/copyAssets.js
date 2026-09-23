@@ -19,3 +19,12 @@ for (const asset of assets) {
     fs.copyFileSync(from, path.join(outDir, asset))
     console.log(`[info] Copied ${asset} -> dist/functions/`)
 }
+
+const optionalAssets = ['custom.json']
+for (const asset of optionalAssets) {
+    const from = path.join(srcDir, asset)
+    if (fs.existsSync(from)) {
+        fs.copyFileSync(from, path.join(outDir, asset))
+        console.log(`[info] Copied ${asset} -> dist/functions/`)
+    }
+}

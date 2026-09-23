@@ -213,5 +213,11 @@ else
 fi
 
 echo "[$(date)] [run_daily.sh] Script finished"
+
+# Enforce ownership for PUID/PGID if provided so newly written files (sessions.db, failed.json) stay accessible
+if [ -n "${PUID:-}" ] && [ -n "${PGID:-}" ]; then
+    chown -R "${PUID}:${PGID}" /usr/src/microsoft-rewards-script/config /usr/src/microsoft-rewards-script/browser/sessions 2>/dev/null || true
+fi
+
 # Lock is released automatically via trap
 exit "$run_status"

@@ -1,6 +1,11 @@
 import type { Page } from 'patchright'
 import { BaseActivity } from '../BaseActivity'
-import { activateSearchOnBing, findSearchOnBingOffer, getSearchOnBingQueries } from './SearchOnBingShared'
+import {
+    activateSearchOnBing,
+    findSearchOnBingOffer,
+    getSearchOnBingQueries,
+    recordFailedSearchOnBing
+} from './SearchOnBingShared'
 import { URLs } from '../../../constants/urls'
 
 import type { BasePromotion } from '../../../interface/DashboardData'
@@ -25,6 +30,7 @@ export class SearchOnBing extends BaseActivity {
         try {
             const activated = await activateSearchOnBing(this.bot, promotion)
             if (!activated) {
+                recordFailedSearchOnBing(promotion, 'Activation failed or not acknowledged by server')
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'SEARCH-ON-BING',
@@ -44,6 +50,10 @@ export class SearchOnBing extends BaseActivity {
                     'green'
                 )
             } else {
+                recordFailedSearchOnBing(
+                    promotion,
+                    `Queries exhausted without completion (tried ${queries.length} queries)`
+                )
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'SEARCH-ON-BING',
@@ -51,6 +61,7 @@ export class SearchOnBing extends BaseActivity {
                 )
             }
         } catch (error) {
+            recordFailedSearchOnBing(promotion, error instanceof Error ? error.message : String(error))
             this.bot.logger.error(
                 this.bot.isMobile,
                 'SEARCH-ON-BING',

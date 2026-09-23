@@ -90,25 +90,87 @@ export async function getSearchOnBingQueries(bot: MicrosoftRewardsBot, promotion
             ).data
         }
 
-        const match = activities.find(
-            activity => bot.utils.normalizeString(activity.title) === bot.utils.normalizeString(promotion.title)
-        )
+        // Load custom local queries if present (e.g. localized/user-defined activities)
+        const customCandidates = [
+            path.join(process.cwd(), 'config/custom.json'),
+            path.join(__dirname, '../../custom.json'),
+            path.join(process.cwd(), 'custom.json'),
+            path.join(process.cwd(), 'src/functions/custom.json')
+        ]
+        let customActivities: ActivityQueries[] = []
+        for (const candidate of customCandidates) {
+            if (fs.existsSync(candidate)) {
+                try {
+                    customActivities = JSON.parse(fs.readFileSync(candidate, 'utf8')) as ActivityQueries[]
+                    bot.logger.debug(
+                        bot.isMobile,
+                        'SEARCH-ON-BING-QUERY',
+                        `Loaded ${customActivities.length} custom activity queries from ${candidate}`
+                    )
+                    break
+                } catch (e) {
+                    bot.logger.warn(
+                        bot.isMobile,
+                        'SEARCH-ON-BING-QUERY',
+                        `Failed reading custom queries file ${candidate} | ${e instanceof Error ? e.message : String(e)}`
+                    )
+                }
+            }
+        }
+
+        // Helper to check if an activity entry matches the promotion
+        const isMatch = (activityTitle: string): boolean => {
+            const normActivity = bot.utils.normalizeString(activityTitle)
+            const normPromotionTitle = bot.utils.normalizeString(promotion.title ?? '')
+            const normOfferId = bot.utils.normalizeString(promotion.offerId ?? '')
+
+            if (!normActivity) return false
+
+            // 1. Exact match on title (localized or English)
+            if (normPromotionTitle && normActivity === normPromotionTitle) return true
+
+            // 2. Exact match on offerId
+            if (normOfferId && normActivity === normOfferId) return true
+
+            // 3. Keyword match in offerId (e.g. activityTitle "recipe" in offerId "ENUS_recipe_exploreonbing...")
+            if (normOfferId && normOfferId.includes(normActivity)) return true
+
+            return false
+        }
+
+        // 1. Check custom dictionary first (prioritizes local offerId / localized overrides)
+        const customMatch = customActivities.find(activity => isMatch(activity.title))
+        if (customMatch?.queries.length) {
+            const shuffled = bot.utils.shuffleArray(customMatch.queries)
+            bot.logger.info(
+                bot.isMobile,
+                'SEARCH-ON-BING-QUERY',
+                `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=custom`
+            )
+            return shuffled
+        }
+
+        // 2. Check stock/remote dictionary
+        const match = activities.find(activity => isMatch(activity.title))
         if (match?.queries.length) {
             const shuffled = bot.utils.shuffleArray(match.queries)
             bot.logger.info(
                 bot.isMobile,
                 'SEARCH-ON-BING-QUERY',
-                `Found ${shuffled.length} queries for "${promotion.title}" | source=${bot.config.searchOnBingLocalQueries ? 'local' : 'remote'}`
+                `Found ${shuffled.length} queries for "${promotion.title}" (${promotion.offerId}) | source=${bot.config.searchOnBingLocalQueries ? 'local' : 'remote'}`
             )
             return shuffled
         }
 
+        // 3. No curated match — fall back safely to the activity description and title
+        // (Avoiding mass blind sweeps to prevent triggering Bing anti-spam algorithms)
+        const fallback = fallbackQueries(promotion)
         bot.logger.info(
             bot.isMobile,
             'SEARCH-ON-BING-QUERY',
-            `No curated queries for "${promotion.title}", falling back to the activity title and description`
+            `No curated queries for "${promotion.title}" (${promotion.offerId}), falling back to activity description/title | queriesCount=${fallback.length}`
         )
-        return fallbackQueries(promotion)
+        return fallback
     } catch (error) {
         bot.logger.error(
             bot.isMobile,
@@ -139,4 +201,49 @@ function extractSearchTerm(description: string): string {
         .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
         .replace(/[.!?]+$/g, '')
         .trim()
+}
+
+interface FailedActivityEntry {
+    offerId: string
+    title: string
+    description: string
+    reason: string
+    lastAttempt: string
+}
+
+export function recordFailedSearchOnBing(promotion: BasePromotion, reason: string): void {
+    try {
+        const configDir = path.join(process.cwd(), 'config')
+        const filePath = fs.existsSync(configDir)
+            ? path.join(configDir, 'failed.json')
+            : path.join(process.cwd(), 'failed.json')
+        let entries: FailedActivityEntry[] = []
+
+        if (fs.existsSync(filePath)) {
+            try {
+                entries = JSON.parse(fs.readFileSync(filePath, 'utf8')) as FailedActivityEntry[]
+            } catch {
+                entries = []
+            }
+        }
+
+        const existingIndex = entries.findIndex(e => e.offerId === promotion.offerId)
+        const entry: FailedActivityEntry = {
+            offerId: promotion.offerId,
+            title: promotion.title ?? '',
+            description: promotion.description ?? '',
+            reason,
+            lastAttempt: new Date().toISOString()
+        }
+
+        if (existingIndex >= 0) {
+            entries[existingIndex] = entry
+        } else {
+            entries.push(entry)
+        }
+
+        fs.writeFileSync(filePath, JSON.stringify(entries, null, 4), 'utf8')
+    } catch {
+        // Silently ignore disk write issues so bot execution is never disrupted
+    }
 }

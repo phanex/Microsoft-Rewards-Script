@@ -77,6 +77,13 @@ echo "[entrypoint] Config ready."
 # Link the generated config back to the root so the app script can find it
 ln -sf "$CONFIG_FILE" "$SCRIPT_DIR/config.json"
 
+# Enforce ownership for PUID/PGID if provided
+if [ -n "${PUID:-}" ] && [ -n "${PGID:-}" ]; then
+  echo "[entrypoint] Setting ownership of config and sessions to ${PUID}:${PGID}..."
+  [ -d "$SCRIPT_DIR/config" ] && chown -R "${PUID}:${PGID}" "$SCRIPT_DIR/config" 2>/dev/null || true
+  [ -d "$SCRIPT_DIR/browser/sessions" ] && chown -R "${PUID}:${PGID}" "$SCRIPT_DIR/browser/sessions" 2>/dev/null || true
+fi
+
 # Snapshot the full container environment for cron-spawned runs
 export -p > /etc/container_env
 chmod 600 /etc/container_env
