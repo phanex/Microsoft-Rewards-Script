@@ -48,6 +48,7 @@ export interface ConfigExperimental {
     apiSearchOnBing: boolean
     blockMedia: boolean
     edgeBrowsing: boolean
+    aiQueryGenerator?: boolean
 }
 
 export interface ConfigProxy {

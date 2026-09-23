@@ -65,7 +65,8 @@
         "apiSearch": false,
         "apiSearchOnBing": false,
         "blockMedia": false,
-        "edgeBrowsing": false
+        "edgeBrowsing": false,
+        "aiQueryGenerator": false
     },
     "debugLogs": false,
     "consoleLogFilter": {
