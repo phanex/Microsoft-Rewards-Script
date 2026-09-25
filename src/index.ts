@@ -351,6 +351,26 @@ export class MicrosoftRewardsBot {
                 const totalFinalPoints = allAccountStats.reduce((sum, s) => sum + s.finalPoints, 0)
                 const totalDurationMinutes = ((Date.now() - runStartTime) / 1000 / 60).toFixed(1)
 
+                for (const stat of allAccountStats) {
+                    this.userData.userName = stat.email.split('@')[0] || stat.email
+                    if (stat.success) {
+                        this.logger.info(
+                            'main',
+                            'ACCOUNT-END',
+                            `Completed account: ${stat.email} | pointsGained=${stat.collectedPoints} | previousBalance=${stat.initialPoints} | currentBalance=${stat.finalPoints} | durationSeconds=${stat.duration}`,
+                            'green'
+                        )
+                    } else {
+                        this.logger.warn(
+                            'main',
+                            'ACCOUNT-END',
+                            `Failed account: ${stat.email} | reason=${stat.error || 'unknown'} | durationSeconds=${stat.duration}`
+                        )
+                    }
+                }
+
+                this.userData.userName = 'ALL'
+
                 this.logger.info(
                     'main',
                     'RUN-END',
@@ -523,6 +543,26 @@ export class MicrosoftRewardsBot {
             const totalInitialPoints = accountStats.reduce((sum, s) => sum + s.initialPoints, 0)
             const totalFinalPoints = accountStats.reduce((sum, s) => sum + s.finalPoints, 0)
             const totalDurationMinutes = ((Date.now() - runStartTime) / 1000 / 60).toFixed(1)
+
+            for (const stat of accountStats) {
+                this.userData.userName = stat.email.split('@')[0] || stat.email
+                if (stat.success) {
+                    this.logger.info(
+                        'main',
+                        'ACCOUNT-END',
+                        `Completed account: ${stat.email} | pointsGained=${stat.collectedPoints} | previousBalance=${stat.initialPoints} | currentBalance=${stat.finalPoints} | durationSeconds=${stat.duration}`,
+                        'green'
+                    )
+                } else {
+                    this.logger.warn(
+                        'main',
+                        'ACCOUNT-END',
+                        `Failed account: ${stat.email} | reason=${stat.error || 'unknown'} | durationSeconds=${stat.duration}`
+                    )
+                }
+            }
+
+            this.userData.userName = 'ALL'
 
             this.logger.info(
                 'main',
