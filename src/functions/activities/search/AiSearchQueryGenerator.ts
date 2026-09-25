@@ -155,6 +155,7 @@ export function saveSuccessfulQuery(offerId: string, title: string, query: strin
         if (process.env.PUID && process.env.PGID) {
             try {
                 fs.chownSync(customPath, Number(process.env.PUID), Number(process.env.PGID))
+                fs.chmodSync(customPath, 0o666)
             } catch {
                 // Ignore if not supported (e.g. Windows)
             }

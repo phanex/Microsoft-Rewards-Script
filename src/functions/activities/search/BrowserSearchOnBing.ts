@@ -28,6 +28,8 @@ export class SearchOnBing extends BaseActivity {
             `Starting SearchOnBing | offerId=${offerId} | title="${promotion.title}" | currentBalance=${this.oldBalance}`
         )
 
+        let queries: string[] = []
+
         try {
             const activated = await activateSearchOnBing(this.bot, promotion)
             if (!activated) {
@@ -40,7 +42,7 @@ export class SearchOnBing extends BaseActivity {
                 return
             }
 
-            let queries = await getSearchOnBingQueries(this.bot, promotion)
+            queries = await getSearchOnBingQueries(this.bot, promotion)
             await this.searchBing(page, queries, promotion)
 
             // If not completed and AI query generator is enabled, attempt 1 retry with alternative AI queries
@@ -68,7 +70,8 @@ export class SearchOnBing extends BaseActivity {
             } else {
                 recordFailedSearchOnBing(
                     promotion,
-                    `Queries exhausted without completion (tried ${queries.length} queries)`
+                    `Queries exhausted without completion (tried ${queries.length} queries)`,
+                    queries
                 )
                 this.bot.logger.warn(
                     this.bot.isMobile,
@@ -77,7 +80,7 @@ export class SearchOnBing extends BaseActivity {
                 )
             }
         } catch (error) {
-            recordFailedSearchOnBing(promotion, error instanceof Error ? error.message : String(error))
+            recordFailedSearchOnBing(promotion, error instanceof Error ? error.message : String(error), queries ?? [])
             this.bot.logger.error(
                 this.bot.isMobile,
                 'SEARCH-ON-BING',

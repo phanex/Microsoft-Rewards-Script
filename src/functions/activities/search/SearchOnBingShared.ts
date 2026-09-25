@@ -241,14 +241,18 @@ function extractSearchTerm(description: string): string {
 }
 
 interface FailedActivityEntry {
-    offerId: string
     title: string
-    description: string
+    cardTitle?: string
+    description?: string
     reason: string
-    lastAttempt: string
+    queries: string[]
 }
 
-export function recordFailedSearchOnBing(promotion: BasePromotion, reason: string): void {
+export function recordFailedSearchOnBing(
+    promotion: BasePromotion,
+    reason: string,
+    attemptedQueries: string[] = []
+): void {
     try {
         const configDir = path.join(process.cwd(), 'config')
         const filePath = fs.existsSync(configDir)
@@ -264,13 +268,16 @@ export function recordFailedSearchOnBing(promotion: BasePromotion, reason: strin
             }
         }
 
-        const existingIndex = entries.findIndex(e => e.offerId === promotion.offerId)
+        const offerId = promotion.offerId
+        const existingIndex = entries.findIndex(e => e.title === offerId)
+
+        const uniqueQueries = [...new Set(attemptedQueries.map(q => q.trim()).filter(Boolean))]
         const entry: FailedActivityEntry = {
-            offerId: promotion.offerId,
-            title: promotion.title ?? '',
-            description: promotion.description ?? '',
+            title: offerId,
+            ...(promotion.title && promotion.title !== offerId ? { cardTitle: promotion.title } : {}),
+            ...(promotion.description ? { description: promotion.description } : {}),
             reason,
-            lastAttempt: new Date().toISOString()
+            queries: uniqueQueries
         }
 
         if (existingIndex >= 0) {
@@ -280,6 +287,15 @@ export function recordFailedSearchOnBing(promotion: BasePromotion, reason: strin
         }
 
         fs.writeFileSync(filePath, JSON.stringify(entries, null, 4), 'utf8')
+
+        if (process.env.PUID && process.env.PGID) {
+            try {
+                fs.chownSync(filePath, Number(process.env.PUID), Number(process.env.PGID))
+                fs.chmodSync(filePath, 0o666)
+            } catch {
+                // Ignore if not supported on the host OS
+            }
+        }
     } catch {
         // Silently ignore disk write issues so bot execution is never disrupted
     }
