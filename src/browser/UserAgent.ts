@@ -301,6 +301,15 @@ export class UserAgentManager {
             fingerprint.headers['sec-ch-ua-bitness'] = `"${meta.bitness}"`
             fingerprint.headers['sec-ch-ua-model'] = `"${meta.model}"`
 
+            if (!isMobile) {
+                const appSuffix = ' MSRewards/Desktop/1.6.0'
+                if (!userAgentData.userAgent.includes(appSuffix)) {
+                    const fullUa = userAgentData.userAgent + appSuffix
+                    fingerprint.fingerprint.navigator.userAgent = fullUa
+                    fingerprint.headers['user-agent'] = fullUa
+                }
+            }
+
             return fingerprint
         } catch (error) {
             this.bot.logger.error(

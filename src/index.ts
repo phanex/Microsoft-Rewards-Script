@@ -833,7 +833,8 @@ export class MicrosoftRewardsBot {
                     const plan = await this.searchManager.getSearchPoints()
                     const doMobileSearch = plan.doMobile
                     const doDesktopSearch = plan.doDesktop
-                    const desktopBrowserNeeded = this.config.workers.doPunchCards || doVisualSearch
+                    const desktopBrowserNeeded =
+                        this.config.workers.doPunchCards || doVisualSearch || this.config.workers.doMorePromotions
 
                     if (doDesktopSearch && !desktopBrowserNeeded) {
                         this.cookies.desktop = [...this.cookies.mobile]
@@ -844,6 +845,10 @@ export class MicrosoftRewardsBot {
                         await executionContext.run({ isMobile: false, account }, async () => {
                             desktopSession = await this.createDesktopSession(account)
                             if (this.config.workers.doPunchCards) await this.activities.doPunchCardsDesktop()
+                            if (this.config.workers.doMorePromotions) {
+                                const desktopData = await this.browser.func.getDashboardData()
+                                await this.activities.doMorePromotions(desktopData)
+                            }
                             if (doVisualSearch) await this.activities.doVisualSearch(data)
                         })
                         await closeDesktopSession()
@@ -877,7 +882,10 @@ export class MicrosoftRewardsBot {
                     const doDesktopSearch = plan.doDesktop
 
                     const desktopBrowserNeeded =
-                        this.config.workers.doPunchCards || doVisualSearch || (doDesktopSearch && !apiSearch)
+                        this.config.workers.doPunchCards ||
+                        doVisualSearch ||
+                        (doDesktopSearch && !apiSearch) ||
+                        this.config.workers.doMorePromotions
 
                     if (apiSearch && doDesktopSearch && !desktopBrowserNeeded) {
                         this.cookies.desktop = [...this.cookies.mobile]
@@ -888,6 +896,10 @@ export class MicrosoftRewardsBot {
                         await executionContext.run({ isMobile: false, account }, async () => {
                             desktopSession = await this.createDesktopSession(account)
                             if (this.config.workers.doPunchCards) await this.activities.doPunchCardsDesktop()
+                            if (this.config.workers.doMorePromotions) {
+                                const desktopData = await this.browser.func.getDashboardData()
+                                await this.activities.doMorePromotions(desktopData)
+                            }
                             if (doVisualSearch) await this.activities.doVisualSearch(data)
                         })
 
@@ -922,6 +934,10 @@ export class MicrosoftRewardsBot {
                                 desktopSession = await this.createDesktopSession(account)
 
                                 if (this.config.workers.doPunchCards) await this.activities.doPunchCardsDesktop()
+                                if (this.config.workers.doMorePromotions) {
+                                    const desktopData = await this.browser.func.getDashboardData()
+                                    await this.activities.doMorePromotions(desktopData)
+                                }
                                 if (doVisualSearch) await this.activities.doVisualSearch(data)
                                 if (doDesktopSearch && !apiSearch) {
                                     desktopPoints = await this.searchManager.searchDesktop(account)

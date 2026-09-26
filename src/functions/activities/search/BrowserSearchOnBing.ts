@@ -102,6 +102,52 @@ export class SearchOnBing extends BaseActivity {
         )
 
         await this.bot.browser.func.synchronizeActiveBrowserCookies('SEARCH-ON-BING-COOKIE-SEED', true)
+
+        const isRewardsApp =
+            promotion.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
+            offerId.toLowerCase().includes('rewardsapp')
+
+        if (isRewardsApp && promotion.destinationUrl) {
+            const destUrl = promotion.destinationUrl.includes('pc=')
+                ? promotion.destinationUrl
+                : `${promotion.destinationUrl}&pc=R010`
+            await page.setExtraHTTPHeaders({ 'X-Rewards-Source': 'msrewards-desktop' }).catch(() => {})
+            this.bot.logger.info(
+                this.bot.isMobile,
+                'SEARCH-ON-BING-SEARCH',
+                `Navigating directly to destinationUrl for RewardsApp activity | url=${destUrl}`
+            )
+            await page.goto(destUrl, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(5000, 8000))
+
+            const dashboard = (await this.bot.browser.func.getDashboardData()).dashboard
+            const newBalance = dashboard.userStatus.availablePoints
+            const offer = findSearchOnBingOffer(dashboard, offerId)
+            const offerComplete =
+                !!offer &&
+                (offer.complete || (offer.pointProgressMax > 0 && offer.pointProgress >= offer.pointProgressMax))
+
+            if (offerComplete || newBalance > this.oldBalance) {
+                this.success = true
+                const delta = newBalance - this.oldBalance
+                if (delta > 0) {
+                    this.bot.userData.gainedPoints = (this.bot.userData.gainedPoints ?? 0) + delta
+                    this.gainedPoints = delta
+                }
+                this.bot.userData.currentPoints = newBalance
+                this.bot.logger.info(
+                    this.bot.isMobile,
+                    'SEARCH-ON-BING-SEARCH',
+                    `RewardsApp activity completed via direct destinationUrl | pointsGained=${this.gainedPoints} | currentBalance=${newBalance}`,
+                    'green'
+                )
+                if (this.bot.config.experimental.aiQueryGenerator && queries[0]) {
+                    saveSuccessfulQuery(offerId, promotion.title ?? '', queries[0])
+                }
+                return
+            }
+        }
+
         await this.ensureSearchReady(page)
 
         let lastBalance = this.oldBalance

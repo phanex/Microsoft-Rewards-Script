@@ -170,7 +170,10 @@ export default class BrowserFunc {
 
             const morePromotionsPoints =
                 data.dashboard.morePromotions?.reduce((sum, x) => {
-                    if (x.promotionType === 'urlreward' && x.exclusiveLockedFeatureStatus !== 'locked') {
+                    const isRewardsApp =
+                        x.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
+                        x.offerId?.toLowerCase().includes('rewardsapp')
+                    if (x.promotionType === 'urlreward' && (x.exclusiveLockedFeatureStatus !== 'locked' || isRewardsApp)) {
                         return sum + (x.pointProgressMax - x.pointProgress)
                     }
                     return sum
@@ -908,9 +911,21 @@ export default class BrowserFunc {
         const referer = opts?.referer ?? url
         const routerStateTree = opts?.routerStateTree ?? this.bot.nextRouterStateTree
 
+        const isRewardsApp =
+            JSON.stringify(body).toLowerCase().includes('rewardsapp') ||
+            referer.toLowerCase().includes('rewardsapp')
+
         const fingerprintHeaders = { ...this.bot.fingerprint.headers }
         delete fingerprintHeaders['Cookie']
         delete fingerprintHeaders['cookie']
+
+        if (isRewardsApp || !this.bot.isMobile) {
+            fingerprintHeaders['X-Rewards-Source'] = 'msrewards-desktop'
+            const currentUa = fingerprintHeaders['User-Agent'] ?? fingerprintHeaders['user-agent'] ?? ''
+            if (!currentUa.includes('MSRewards/Desktop')) {
+                fingerprintHeaders['User-Agent'] = currentUa + ' MSRewards/Desktop/1.6.0'
+            }
+        }
 
         const headers = {
             ...fingerprintHeaders,
@@ -964,6 +979,14 @@ export default class BrowserFunc {
             const headers = { ...(this.bot.fingerprint?.headers ?? {}) }
             delete headers['Cookie']
             delete headers['cookie']
+
+            if (!this.bot.isMobile || url.toLowerCase().includes('rewardsapp')) {
+                headers['X-Rewards-Source'] = 'msrewards-desktop'
+                const currentUa = headers['User-Agent'] ?? headers['user-agent'] ?? ''
+                if (!currentUa.includes('MSRewards/Desktop')) {
+                    headers['User-Agent'] = currentUa + ' MSRewards/Desktop/1.6.0'
+                }
+            }
 
             const response = await this.bot.http.request<string>({
                 url,

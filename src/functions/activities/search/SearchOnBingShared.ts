@@ -143,6 +143,22 @@ export async function getSearchOnBingQueries(
             return false
         }
 
+        // 0. Extract query directly from destinationUrl if present (e.g. RewardsApp search offers)
+        if (!failedQueries?.length && promotion.destinationUrl) {
+            try {
+                const targetUrl = new URL(promotion.destinationUrl, URLs.bing.origin)
+                const urlQuery = targetUrl.searchParams.get('q')
+                if (urlQuery && urlQuery.trim()) {
+                    bot.logger.info(
+                        bot.isMobile,
+                        'SEARCH-ON-BING-QUERY',
+                        `Extracted target query "${urlQuery.trim()}" directly from destinationUrl | offerId=${promotion.offerId}`
+                    )
+                    return [urlQuery.trim()]
+                }
+            } catch {}
+        }
+
         // 1. Check custom dictionary first (prioritizes local offerId / localized overrides)
         // If failedQueries were provided, this is a retry and custom match shouldn't loop indefinitely
         if (!failedQueries?.length) {

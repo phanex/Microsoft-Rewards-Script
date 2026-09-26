@@ -317,8 +317,13 @@ export default class ReactFunc {
                     promotionalValue === true ||
                     (typeof promotionalValue === 'string' && promotionalValue.toLowerCase() === 'true')
 
+                const isRewardsApp =
+                    offerId.toLowerCase().includes('rewardsapp') ||
+                    (obj.exclusiveLockedFeatureCategory as string | undefined)?.toLowerCase() === 'rewardsapp'
+
                 // Never try future-dated offers, lol
-                const reportable = !!hash && !isCompleted && !isLocked && (date === null || date <= today)
+                const reportable =
+                    !!hash && !isCompleted && (!isLocked || isRewardsApp) && (date === null || date <= today)
 
                 const isExploreOnBing = offerId.toLowerCase().includes('exploreonbing')
 

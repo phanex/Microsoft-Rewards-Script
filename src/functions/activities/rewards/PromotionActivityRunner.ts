@@ -43,8 +43,14 @@ export class PromotionActivityRunner extends BaseActivity {
             return
         }
 
+        const isRewardsApp =
+            promotion.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
+            offerId.toLowerCase().includes('rewardsapp')
         // Offers sourced via RSC flight chunks have name set to offerId, so check both
-        const isSearchOnBing = name.includes('exploreonbing') || offerId.toLowerCase().includes('exploreonbing')
+        const isSearchOnBing =
+            name.includes('exploreonbing') ||
+            offerId.toLowerCase().includes('exploreonbing') ||
+            isRewardsApp
         if (isSearchOnBing && !this.bot.config.activities.searchOnBing) {
             this.logDisabled('SearchOnBing', offerId)
             return

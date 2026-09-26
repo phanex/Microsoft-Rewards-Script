@@ -10,3 +10,5 @@ note
 .playwright-chromium-installed
 .stfolder/
 .env
+*.saz
+saz*

@@ -46,8 +46,12 @@ export class MorePromotions extends BaseActivity {
 
     private isActionable(promotion: BasePromotion): boolean {
         if (promotion.complete || promotion.pointProgressMax <= 0) return false
-        if (promotion.exclusiveLockedFeatureStatus === 'locked' || !promotion.promotionType) return false
-        if (promotion.priority < 0 && promotion.exclusiveLockedFeatureStatus !== 'unlocked') return false
+        const isRewardsApp =
+            promotion.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
+            promotion.offerId?.toLowerCase().includes('rewardsapp')
+        if (promotion.exclusiveLockedFeatureStatus === 'locked' && !isRewardsApp) return false
+        if (!promotion.promotionType) return false
+        if (promotion.priority < 0 && promotion.exclusiveLockedFeatureStatus !== 'unlocked' && !isRewardsApp) return false
         return this.getAttribute(promotion, 'promotional') !== 'True'
     }
 

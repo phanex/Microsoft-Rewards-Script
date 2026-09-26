@@ -100,7 +100,23 @@ class Browser {
         }
 
         try {
-            const session = loadSession(this.bot.config.sessionPath, account.email, this.bot.isMobile)
+            let session = loadSession(this.bot.config.sessionPath, account.email, this.bot.isMobile)
+            if (!session?.storageState && !this.bot.isMobile) {
+                const mobileSession = loadSession(this.bot.config.sessionPath, account.email, true)
+                if (mobileSession?.storageState) {
+                    this.bot.logger.info(
+                        this.bot.isMobile,
+                        'SESSION',
+                        `Importing active mobile cookies into desktop session | cookies=${mobileSession.storageState.cookies.length}`
+                    )
+                    session = {
+                        storageState: mobileSession.storageState,
+                        fingerprint: null,
+                        updatedAt: mobileSession.updatedAt,
+                        expiredCookiesRemoved: mobileSession.expiredCookiesRemoved
+                    }
+                }
+            }
 
             if (session?.storageState) {
                 const ageMinutes = Math.max(0, Math.floor((Date.now() - session.updatedAt) / 60000))
