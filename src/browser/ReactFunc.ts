@@ -263,6 +263,37 @@ export default class ReactFunc {
     }
 
     /**
+     * Extracts and flattens all readable text content from a card object into a single
+     * clean line of alphanumeric words and spaces for easy readability in failure logs.
+     */
+    private dumpCardText(obj: unknown): string {
+        const strings: string[] = []
+        const walk = (val: unknown) => {
+            if (!val) return
+            if (typeof val === 'string') {
+                const s = val.replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
+                if (s.length > 1 && !s.startsWith('$') && !s.startsWith('/')) {
+                    strings.push(s)
+                }
+            } else if (Array.isArray(val)) {
+                for (const item of val) walk(item)
+            } else if (typeof val === 'object') {
+                const rec = val as Record<string, unknown>
+                for (const key of Object.keys(rec)) {
+                    if (key === 'className' || key === 'style' || key === 'hash' || key === 'ref') continue
+                    walk(rec[key])
+                }
+            }
+        }
+        walk(obj)
+        return strings
+            .join(' ')
+            .replace(/[^\p{L}\p{N}\s\-]/gu, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+    }
+
+    /**
      * Walk a parsed RSC object tree and return the first text content
      * found inside a node whose `className` includes `targetClass`.
      * Completely language-agnostic — relies only on Fluent UI design tokens.
@@ -339,6 +370,15 @@ export default class ReactFunc {
                 }
                 if (!description) {
                     description = this.findTextByClass(obj, 'text-fgCtrlNeutralSecondaryRest') ?? ''
+                }
+                const cardDump = this.dumpCardText(obj)
+                if (!description) {
+                    description = cardDump
+                }
+                if (!title && cardDump) {
+                    // Extract first words as fallback title if empty
+                    const words = cardDump.split(' ').slice(0, 6).join(' ')
+                    title = words || offerId
                 }
                 if (!points) {
                     const badgeText = this.findTextByClass(obj, 'text-statusInformativeTintFg') ?? ''
@@ -739,7 +779,11 @@ export default class ReactFunc {
             const isLocked = (obj.isLocked as boolean | undefined) === true
             const isDisabled = (obj.isDisabled as boolean | undefined) === true
 
-            const reportable = !!hash && !isCompleted && !isLocked && !isDisabled
+            const isRewardsApp =
+                offerId.toLowerCase().includes('rewardsapp') ||
+                (obj.exclusiveLockedFeatureCategory as string | undefined)?.toLowerCase() === 'rewardsapp'
+
+            const reportable = !!hash && !isCompleted && (!isLocked || isRewardsApp) && !isDisabled
 
             out.push({
                 offerId,
@@ -801,8 +845,8 @@ export default class ReactFunc {
                 // Points badge may render as ["+","150"] or ["","150"]
                 const pointsMatch = region.match(/\["(?:|\+)","([\d,]+)"\]/)
                 const points = pointsMatch ? Number(pointsMatch[1]!.replace(/,/g, '')) : 0
-                // Progress is always rendered with a slash (e.g. "1/5", "Einchecken: 1/1")
-                const taskM = region.match(/(\d+)\s*\/\s*(\d+)/)
+                // Progress is rendered with a slash or localized word (e.g. "1/5", "1 von 8", "1 of 8", "1 sur 8")
+                const taskM = region.match(/(\d+)\s*(?:\/|von|of|de|sur)\s*(\d+)/i)
                 const complete = !!taskM && Number(taskM[1]) >= Number(taskM[2]!) && Number(taskM[2]) > 0
 
                 const prev = byId.get(id)

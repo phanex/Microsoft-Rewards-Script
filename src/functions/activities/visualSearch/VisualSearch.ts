@@ -516,9 +516,7 @@ export class VisualSearch extends BaseActivity {
 
     private async waitForDayRegistration(): Promise<boolean> {
         for (let check = 1; check <= REGISTRATION_CHECKS; check++) {
-            if (check > 1) {
-                await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 4000))
-            }
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 4500))
             if (await this.dayRegistered()) return true
         }
 

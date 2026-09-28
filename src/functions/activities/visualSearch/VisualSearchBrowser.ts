@@ -94,6 +94,9 @@ export class VisualSearchBrowser {
                     ` | searchPts=${parsed.searchPointsEarned ?? 'n/a'}/${parsed.searchPointsLimit ?? 'n/a'}`
             )
 
+            // Give the page time to complete telemetry and settle credit before closing
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 3500))
+
             return { acknowledged, ig, ...parsed, gained }
         } catch (error) {
             this.bot.logger.warn(
@@ -190,6 +193,60 @@ export class VisualSearchBrowser {
 
     public async getSeedUrls(): Promise<string[]> {
         const page = this.bot.mainDesktopPage
+        const flickrSeeds: string[] = []
+
+        // 1. Try Flickr public feed (real high-quality user photos, avoiding flagged Bing wallpapers)
+        try {
+            const flickrUrl =
+                'https://www.flickr.com/services/feeds/photos_public.gne?tags=nature,landscape,travel,city&tagmode=any&format=json&nojsoncallback=1'
+            interface FlickrFeed {
+                items?: { media?: { m?: string } }[]
+            }
+            let flickrJson: FlickrFeed | null = null
+
+            if (page && !page.isClosed()) {
+                const response = await page.request.get(flickrUrl, { timeout: 10000 })
+                if (response.ok()) {
+                    flickrJson = (await response.json()) as FlickrFeed
+                }
+            }
+            if (!flickrJson) {
+                const res = await fetch(flickrUrl, { signal: AbortSignal.timeout(10000) })
+                if (res.ok) {
+                    flickrJson = (await res.json()) as FlickrFeed
+                }
+            }
+
+            const items = flickrJson?.items
+            if (Array.isArray(items) && items.length > 0) {
+                for (const item of items) {
+                    const m = item.media?.m
+                    if (typeof m === 'string' && m.startsWith('http')) {
+                        // Use larger size _b.jpg (1024px) for better visual search feature detection
+                        flickrSeeds.push(m.replace('_m.jpg', '_b.jpg'))
+                    }
+                }
+            }
+        } catch (error) {
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'VISUAL-SEARCH-BCID',
+                `Flickr feed lookup failed | ${error instanceof Error ? error.message : String(error)}`
+            )
+        }
+
+        if (flickrSeeds.length > 0) {
+            this.bot.utils.shuffleArray(flickrSeeds)
+            this.bot.logger.info(
+                this.bot.isMobile,
+                'VISUAL-SEARCH-BCID',
+                `Prepared ${flickrSeeds.length} external photo seed(s) from Flickr feed`,
+                'blue'
+            )
+            return flickrSeeds
+        }
+
+        // 2. Fallback to Bing HPImageArchive
         if (!page || page.isClosed()) {
             this.bot.logger.warn(
                 this.bot.isMobile,
@@ -274,17 +331,32 @@ export class VisualSearchBrowser {
 
     private parseReport(data: unknown): ParsedReport {
         if (typeof data !== 'string') return this.emptyParsedReport()
+
+        let rawObj: Record<string, unknown> | null = null
+
         const match = data.match(/ModernRewards\.ReportActivity\((\{[\s\S]*?\})\)\s*;/)
-        if (!match) return this.emptyParsedReport()
+        if (match && match[1]) {
+            try {
+                rawObj = JSON.parse(match[1]) as Record<string, unknown>
+            } catch {}
+        }
+
+        if (!rawObj) {
+            try {
+                rawObj = JSON.parse(data) as Record<string, unknown>
+            } catch {}
+        }
+
+        if (!rawObj) return this.emptyParsedReport()
 
         try {
-            const session = JSON.parse(match[1] ?? '{}').RewardsSessionData ?? {}
+            const session = (rawObj.RewardsSessionData ?? rawObj.rewardsSessionData ?? rawObj) as Record<string, unknown>
             const numberOrNull = (value: unknown): number | null => (typeof value === 'number' ? value : null)
             return {
-                balance: numberOrNull(session.Balance),
-                previousBalance: numberOrNull(session.PreviousBalance),
-                searchPointsEarned: numberOrNull(session.DailySearchPointsEarned),
-                searchPointsLimit: numberOrNull(session.DailySearchPointsLimit)
+                balance: numberOrNull(session.Balance ?? session.balance ?? session.CurrentPoints ?? session.currentPoints),
+                previousBalance: numberOrNull(session.PreviousBalance ?? session.previousBalance),
+                searchPointsEarned: numberOrNull(session.DailySearchPointsEarned ?? session.dailySearchPointsEarned),
+                searchPointsLimit: numberOrNull(session.DailySearchPointsLimit ?? session.dailySearchPointsLimit)
             }
         } catch {
             return this.emptyParsedReport()

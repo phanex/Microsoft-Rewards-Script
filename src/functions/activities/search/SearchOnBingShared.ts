@@ -260,6 +260,7 @@ interface FailedActivityEntry {
     title: string
     cardTitle?: string
     description?: string
+    destinationUrl?: string
     reason: string
     queries: string[]
 }
@@ -292,6 +293,7 @@ export function recordFailedSearchOnBing(
             title: offerId,
             ...(promotion.title && promotion.title !== offerId ? { cardTitle: promotion.title } : {}),
             ...(promotion.description ? { description: promotion.description } : {}),
+            ...(promotion.destinationUrl ? { destinationUrl: promotion.destinationUrl } : {}),
             reason,
             queries: uniqueQueries
         }
