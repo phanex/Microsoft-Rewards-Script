@@ -98,7 +98,7 @@ export const ENV_OVERRIDES: EnvOverrideEntry[] = [
 
 const FORCED_OVERRIDES: { path: string; value: unknown }[] = [{ path: 'headless', value: true }]
 
-function setDeep(obj: Record<string, unknown>, dottedPath: string, value: unknown): void {
+export function setDeep(obj: Record<string, unknown>, dottedPath: string, value: unknown): void {
     const parts = dottedPath.split('.')
     let cur = obj
     for (let i = 0; i < parts.length - 1; i++) {

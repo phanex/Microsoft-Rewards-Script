@@ -3,6 +3,7 @@ import path from 'path'
 
 import type { Account, AccountProxy, ConfigSaveFingerprint } from '../interface/Account'
 import type { Config } from '../interface/Config'
+import { computeOverrides, setDeep } from './ConfigEnvOverrides'
 import { validateAccounts, validateConfig } from './Validator'
 
 let configCache: Config
@@ -160,6 +161,8 @@ export function loadConfig(): Config {
             return configCache
         }
 
+        ensureEnvLoaded()
+
         // Check root -> dist -> src (not in dist, but root)
         const configPath = resolveProjectFile('config.json')
         if (!configPath) {
@@ -169,7 +172,12 @@ export function loadConfig(): Config {
         }
         const config = fs.readFileSync(configPath, 'utf-8')
 
-        const unverifiedConfig = JSON.parse(config)
+        const unverifiedConfig = JSON.parse(config) as Record<string, unknown>
+        const { applied } = computeOverrides(process.env)
+        for (const { path: p, value } of applied) {
+            setDeep(unverifiedConfig, p, value)
+        }
+
         const configData = validateConfig(unverifiedConfig)
 
         configCache = configData
