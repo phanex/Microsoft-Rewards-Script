@@ -21,6 +21,10 @@ export default class BrowserFunc {
 
     private useFlyoutDashboardFallback = false
 
+    resetDashboardFallback(): void {
+        this.useFlyoutDashboardFallback = false
+    }
+
     constructor(bot: MicrosoftRewardsBot) {
         this.bot = bot
     }

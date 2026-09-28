@@ -623,6 +623,7 @@ export class MicrosoftRewardsBot {
         this.reactSnapshot = null
         this.reactSnapshots = { mobile: null, desktop: null }
         this.searchTopicsCache = null
+        this.browser.func.resetDashboardFallback()
 
         const apiSearch = this.config.experimental.apiSearch
         const apiSearchOnBing = this.config.experimental.apiSearchOnBing
