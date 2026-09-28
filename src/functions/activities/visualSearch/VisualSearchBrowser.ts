@@ -53,21 +53,59 @@ export class VisualSearchBrowser {
                         if (response.request().method() !== 'POST') return false
                         try {
                             const url = new URL(response.url())
-                            return (
+                            const isReport =
                                 url.origin === URLs.bing.origin &&
-                                url.pathname.toLowerCase() === '/rewardsapp/reportactivity' &&
-                                url.searchParams.get('bcid') === candidate.bcid
+                                url.pathname.toLowerCase().includes('/rewardsapp/reportactivity')
+                            if (!isReport) return false
+                            const bcid = url.searchParams.get('bcid')
+                            return (
+                                !bcid ||
+                                bcid === candidate.bcid ||
+                                candidate.bcid.startsWith(bcid) ||
+                                bcid.startsWith(candidate.bcid)
                             )
                         } catch {
                             return false
                         }
                     },
-                    { timeout: 20000 }
+                    { timeout: 25000 }
                 )
                 .catch(() => null)
 
-            await visualPage.goto(candidate.serpUrl, { waitUntil: 'domcontentloaded', timeout: 20000 })
+            await visualPage.goto(candidate.serpUrl, { waitUntil: 'load', timeout: 25000 }).catch(async () => {
+                await visualPage?.goto(candidate.serpUrl, { waitUntil: 'domcontentloaded', timeout: 20000 })
+            })
+
             const response = await responsePromise
+
+            // Wait for visual search content elements to appear
+            await visualPage
+                .waitForSelector('#vs_results, .vs_content, .iusc, #b_results, .b_algo', { timeout: 6000 })
+                .catch(() => {})
+
+            // Simulate realistic scrolling on the result page
+            await visualPage
+                .evaluate(() => {
+                    window.scrollBy({ top: 350 + Math.floor(Math.random() * 200), behavior: 'smooth' })
+                })
+                .catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 3500))
+
+            // Hover on first visual result
+            const firstResult = await visualPage.$('.vs_content a, #vs_results a, .iusc, .b_algo a').catch(() => null)
+            if (firstResult) {
+                await firstResult.hover().catch(() => {})
+                await this.bot.utils.wait(this.bot.utils.randomDelay(1000, 2000))
+            }
+
+            // Scroll slightly more
+            await visualPage
+                .evaluate(() => {
+                    window.scrollBy({ top: 250 + Math.floor(Math.random() * 200), behavior: 'smooth' })
+                })
+                .catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 4000))
+
             if (!response) {
                 this.bot.logger.warn(
                     this.bot.isMobile,
@@ -93,9 +131,6 @@ export class VisualSearchBrowser {
                     ` | pointsGained=${gained ?? 'n/a'} | currentBalance=${parsed.balance ?? 'n/a'}` +
                     ` | searchPts=${parsed.searchPointsEarned ?? 'n/a'}/${parsed.searchPointsLimit ?? 'n/a'}`
             )
-
-            // Give the page time to complete telemetry and settle credit before closing
-            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 3500))
 
             return { acknowledged, ig, ...parsed, gained }
         } catch (error) {
@@ -125,8 +160,20 @@ export class VisualSearchBrowser {
             }
 
             const seed = imageUrl ?? (await this.getSeedUrls())[0] ?? STATIC_SEED_URL
-            const headers = { ...(this.bot.fingerprint?.headers ?? {}) }
-            delete headers['Cookie']
+            const cookies = await page.context().cookies(URLs.bing.origin).catch(() => [])
+            const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ')
+
+            const headers: Record<string, string> = {
+                ...(this.bot.fingerprint?.headers ?? {}),
+                Accept: 'application/json',
+                'Content-Type': `multipart/form-data; boundary=----WebKitFormBoundary`,
+                Referer: `${URLs.bing.origin}/`,
+                Origin: URLs.bing.origin,
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-origin',
+                ...(cookieHeader ? { Cookie: cookieHeader } : {})
+            }
             delete headers['cookie']
 
             const encodedSeed = encodeURIComponent(seed)
@@ -134,17 +181,10 @@ export class VisualSearchBrowser {
                 `${URLs.bing.origin}/images/kblob` +
                 `?iss=sbi&form=SBIHMP&sbisrc=UrlPaste&vsimg=${encodedSeed}&imgurl=${encodedSeed}`
             const boundary = `----WebKitFormBoundary${randomBytes(8).toString('hex')}`
+            headers['Content-Type'] = `multipart/form-data; boundary=${boundary}`
+
             const response = await page.request.post(url, {
-                headers: {
-                    ...headers,
-                    Accept: 'application/json',
-                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    Referer: `${URLs.bing.origin}/visualsearch`,
-                    Origin: URLs.bing.origin,
-                    'Sec-Fetch-Dest': 'empty',
-                    'Sec-Fetch-Mode': 'cors',
-                    'Sec-Fetch-Site': 'same-origin'
-                },
+                headers,
                 data: this.buildMultipart(boundary),
                 timeout: 20000
             })

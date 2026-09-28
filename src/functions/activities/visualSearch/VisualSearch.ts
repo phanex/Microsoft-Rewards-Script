@@ -516,7 +516,7 @@ export class VisualSearch extends BaseActivity {
 
     private async waitForDayRegistration(): Promise<boolean> {
         for (let check = 1; check <= REGISTRATION_CHECKS; check++) {
-            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 4500))
+            await this.bot.utils.wait(this.bot.utils.randomDelay(3000, 5000))
             if (await this.dayRegistered()) return true
         }
 
@@ -529,7 +529,12 @@ export class VisualSearch extends BaseActivity {
 
         const streak = this.findStreak(snapshot.streaks)
         if (!streak) return false
-        if (streak.isCurrentDayCompleted) return true
+        if (
+            streak.isCurrentDayCompleted ||
+            (streak.activitiesCompleted > 0 && streak.activitiesCompleted >= streak.activitiesTotal)
+        ) {
+            return true
+        }
 
         this.bot.logger.debug(
             this.bot.isMobile,
