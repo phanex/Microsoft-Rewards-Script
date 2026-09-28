@@ -411,7 +411,42 @@ export class VisualSearch extends BaseActivity {
         const seenBcids = new Set<string>()
         const candidateSeeds = await this.browserFlow.getSeedUrls()
 
+        // 1. Try native Bing UI visual search first (passes anti-fraud streak checks)
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            const seed = candidateSeeds[(attempt - 1) % candidateSeeds.length]
+            if (seed) {
+                this.bot.logger.info(
+                    this.bot.isMobile,
+                    'VISUAL-SEARCH',
+                    `Attempting native UI visual search (attempt ${attempt}/${MAX_ATTEMPTS}) | seed=${seed}`
+                )
+                const res = await this.browserFlow.performNative(seed)
+                if (res.balance != null) this.bot.userData.currentPoints = res.balance
+
+                const gained = res.gained ?? 0
+                if (gained >= 5) {
+                    this.bot.userData.gainedPoints = (this.bot.userData.gainedPoints ?? 0) + gained
+                    this.bot.logger.info(
+                        this.bot.isMobile,
+                        'VISUAL-SEARCH',
+                        `Daily visual search done via native UI | pointsGained=${gained} | currentBalance=${res.balance}`,
+                        'green'
+                    )
+                    return gained
+                }
+
+                if (await this.waitForDayRegistration()) {
+                    this.bot.logger.info(
+                        this.bot.isMobile,
+                        'VISUAL-SEARCH',
+                        `Daily visual search registered via native UI | pointsGained=0 (streak pays out on milestones)`,
+                        'green'
+                    )
+                    return 0
+                }
+            }
+
+            // Fallback to acquire & report if native search attempt did not register
             const visual = await this.acquireFreshVisualSearch(seenBcids, candidateSeeds, attempt)
             if (!visual) {
                 await this.bot.utils.wait(this.bot.utils.randomDelay(3000, 6000))

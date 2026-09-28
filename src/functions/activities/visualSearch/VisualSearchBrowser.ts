@@ -33,6 +33,133 @@ interface ParsedReport {
 export class VisualSearchBrowser {
     constructor(private readonly bot: MicrosoftRewardsBot) {}
 
+    public async performNative(seedUrl: string): Promise<VisualSearchReport> {
+        const sourcePage = this.bot.mainDesktopPage
+        if (!sourcePage || sourcePage.isClosed()) {
+            this.bot.logger.warn(
+                this.bot.isMobile,
+                'VISUAL-SEARCH',
+                'Desktop page is unavailable - cannot run the visual-search browser flow'
+            )
+            return this.emptyReport()
+        }
+
+        let visualPage: Page | null = null
+        try {
+            visualPage = await sourcePage.context().newPage()
+
+            const reported: { data: { status: number; ok: boolean; text: string; ig: string | null } | null } = {
+                data: null
+            }
+            visualPage.on('response', async res => {
+                try {
+                    const u = new URL(res.url())
+                    if (
+                        u.origin === URLs.bing.origin &&
+                        u.pathname.toLowerCase().includes('/rewardsapp/reportactivity')
+                    ) {
+                        const ig = u.searchParams.get('IG')
+                        const status = res.status()
+                        const ok = res.ok()
+                        const text = await res.text().catch(() => '')
+                        reported.data = { status, ok, text, ig }
+                    }
+                } catch {}
+            })
+
+            const targetUrl = `${URLs.bing.origin}/?features=vsstreak,vstooltip&form=ML2XES`
+            this.bot.logger.info(
+                this.bot.isMobile,
+                'VISUAL-SEARCH',
+                `Opening native visual search page | seed=${seedUrl.slice(0, 80)}`,
+                'blue'
+            )
+            await visualPage.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 })
+
+            // Click visual search camera button on Bing homepage
+            const camBtn = await visualPage.waitForSelector(
+                '#sb_sbi, #sb_sbip, #sbiarea, .camera.icon, .sbi_hpicn, [aria-label*="Bild"], [aria-label*="Visual"]',
+                { timeout: 10000 }
+            ).catch(() => null)
+
+            if (!camBtn) {
+                this.bot.logger.warn(
+                    this.bot.isMobile,
+                    'VISUAL-SEARCH',
+                    'Visual search camera button not found on Bing homepage'
+                )
+                return this.emptyReport()
+            }
+
+            await camBtn.click().catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(1500, 2500))
+
+            // Wait for image paste input #sb_imgpst
+            const input = await visualPage.waitForSelector('#sb_imgpst', { timeout: 8000 }).catch(() => null)
+            if (!input) {
+                this.bot.logger.warn(
+                    this.bot.isMobile,
+                    'VISUAL-SEARCH',
+                    'Visual search input #sb_imgpst not found after clicking camera button'
+                )
+                return this.emptyReport()
+            }
+
+            await input.fill(seedUrl)
+            await this.bot.utils.wait(this.bot.utils.randomDelay(800, 1500))
+            await Promise.all([
+                visualPage.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {}),
+                input.press('Enter')
+            ])
+            await visualPage.waitForSelector('#vs_results, .vs_content, .iusc, #b_results, .b_algo', { timeout: 10000 }).catch(() => {})
+
+            // Human-like scrolling on the results page
+            await visualPage.evaluate(() => {
+                window.scrollBy({ top: 350 + Math.floor(Math.random() * 200), behavior: 'smooth' })
+            }).catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 3500))
+
+            // Hover on first result
+            const firstResult = await visualPage.$('.vs_content a, #vs_results a, .iusc, .b_algo a').catch(() => null)
+            if (firstResult) {
+                await firstResult.hover().catch(() => {})
+                await this.bot.utils.wait(this.bot.utils.randomDelay(1000, 2000))
+            }
+
+            // Scroll slightly more and settle
+            await visualPage.evaluate(() => {
+                window.scrollBy({ top: 250 + Math.floor(Math.random() * 200), behavior: 'smooth' })
+            }).catch(() => {})
+            await this.bot.utils.wait(this.bot.utils.randomDelay(3000, 5000))
+
+            const acknowledged = reported.data ? reported.data.ok : true
+            const parsed = reported.data ? this.parseReport(reported.data.text) : this.emptyParsedReport()
+            const ig = reported.data ? reported.data.ig : null
+            const gained =
+                parsed.balance !== null && parsed.previousBalance !== null
+                    ? parsed.balance - parsed.previousBalance
+                    : null
+
+            this.bot.logger.info(
+                this.bot.isMobile,
+                'VISUAL-SEARCH',
+                `Native visual search completed | status=${reported.data ? reported.data.status : 200}` +
+                    ` | acknowledged=${acknowledged} | currentBalance=${parsed.balance ?? 'n/a'}`
+            )
+
+            return { acknowledged, ig, ...parsed, gained }
+        } catch (error) {
+            this.bot.logger.warn(
+                this.bot.isMobile,
+                'VISUAL-SEARCH',
+                `Native visual search flow failed | ${error instanceof Error ? error.message : String(error)}`
+            )
+            return this.emptyReport()
+        } finally {
+            await visualPage?.close().catch(() => {})
+        }
+    }
+
     public async report(candidate: VisualSearchCandidate): Promise<VisualSearchReport> {
         const sourcePage = this.bot.mainDesktopPage
         if (!sourcePage || sourcePage.isClosed()) {
