@@ -305,8 +305,9 @@ export class PunchCards extends BaseActivity {
     }
 
     private isClaimChild(offerId: string, promotion?: BasePromotion): boolean {
+        if (/urlreward/i.test(offerId)) return false
         if (/\/redeem\//.test((promotion?.destinationUrl ?? '').toLowerCase())) return true
-        return /(redeem|claim|(?<!url)reward)/i.test(offerId)
+        return /(redeem|claim)/i.test(offerId)
     }
 
     private getAttribute(promotion: BasePromotion, key: string): unknown {
