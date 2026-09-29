@@ -1,5 +1,10 @@
 import { BaseActivity } from '../BaseActivity'
-import { activateSearchOnBing, findSearchOnBingOffer, getSearchOnBingQueries } from '../search/SearchOnBingShared'
+import {
+    activateSearchOnBing,
+    findSearchOnBingOffer,
+    getSearchOnBingQueries,
+    recordFailedSearchOnBing
+} from '../search/SearchOnBingShared'
 
 import type { BasePromotion, Dashboard } from '../../../interface/DashboardData'
 import { BingSearchApi } from './BingSearchApi'
@@ -23,6 +28,8 @@ export class ApiSearchOnBing extends BaseActivity {
             `Starting SearchOnBing | offerId=${offerId} | title="${promotion.title}" | currentBalance=${this.oldBalance}`
         )
 
+        let queries: string[] = []
+
         try {
             if (!(await activateSearchOnBing(this.bot, promotion))) {
                 this.bot.logger.warn(
@@ -33,7 +40,7 @@ export class ApiSearchOnBing extends BaseActivity {
                 return
             }
 
-            const queries = await getSearchOnBingQueries(this.bot, promotion)
+            queries = await getSearchOnBingQueries(this.bot, promotion)
             await this.searchBing(queries, promotion)
 
             if (this.success) {
@@ -44,6 +51,11 @@ export class ApiSearchOnBing extends BaseActivity {
                     'green'
                 )
             } else {
+                recordFailedSearchOnBing(
+                    promotion,
+                    `Queries exhausted without completion (tried ${queries.length} queries)`,
+                    queries
+                )
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'SEARCH-ON-BING',
@@ -51,6 +63,7 @@ export class ApiSearchOnBing extends BaseActivity {
                 )
             }
         } catch (error) {
+            recordFailedSearchOnBing(promotion, error instanceof Error ? error.message : String(error), queries ?? [])
             this.bot.logger.error(
                 this.bot.isMobile,
                 'SEARCH-ON-BING',

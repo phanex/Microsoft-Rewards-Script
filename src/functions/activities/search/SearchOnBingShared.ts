@@ -300,7 +300,7 @@ export function recordFailedSearchOnBing(
             ...(promotion.description ? { description: promotion.description } : {}),
             ...(promotion.destinationUrl ? { destinationUrl: promotion.destinationUrl } : {}),
             reason,
-            queries: uniqueQueries
+            queries: uniqueQueries.length > 0 ? uniqueQueries : ['']
         }
 
         if (existingIndex >= 0) {
