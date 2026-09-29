@@ -60,6 +60,9 @@ export const ENV_OVERRIDES: EnvOverrideEntry[] = [
     { env: 'CONFIG_EXPERIMENTAL_BLOCK_MEDIA', path: 'experimental.blockMedia', type: 'bool' },
     { env: 'CONFIG_EXPERIMENTAL_EDGE_BROWSING', path: 'experimental.edgeBrowsing', type: 'bool' },
     { env: 'CONFIG_EXPERIMENTAL_AI_QUERY_GENERATOR', path: 'experimental.aiQueryGenerator', type: 'bool' },
+    { env: 'CONFIG_EXPERIMENTAL_AI_BASE_URL', path: 'experimental.aiBaseUrl', type: 'string' },
+    { env: 'CONFIG_EXPERIMENTAL_AI_API_KEY', path: 'experimental.aiApiKey', type: 'string' },
+    { env: 'CONFIG_EXPERIMENTAL_AI_MODEL', path: 'experimental.aiModel', type: 'string' },
 
     // Proxy
     { env: 'CONFIG_PROXY_QUERY_ENGINE', path: 'proxy.queryEngine', type: 'bool' },

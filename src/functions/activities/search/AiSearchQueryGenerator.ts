@@ -6,14 +6,22 @@ export interface ActivityQueryEntry {
     queries: string[]
 }
 
+export interface AiModelOptions {
+    aiBaseUrl?: string
+    aiApiKey?: string
+    aiModel?: string
+}
+
 /**
  * Generates targeted Bing search queries via LLM for a given Rewards activity.
  * Supports localized/non-English cards and avoids repeating failed queries.
+ * Supports self-hosted Ollama/OpenAI-compatible endpoints or zero-config fallback.
  */
 export async function generateAiQueries(
     title: string,
     description: string,
-    failedQueries: string[] = []
+    failedQueries: string[] = [],
+    options?: AiModelOptions
 ): Promise<string[]> {
     const cleanTitle = (title || '').trim()
     const cleanDesc = (description || '').trim()
@@ -36,22 +44,58 @@ export async function generateAiQueries(
     const timeoutId = setTimeout(() => controller.abort(), 15000)
 
     try {
-        const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            signal: controller.signal
-        })
+        let rawText = ''
+        const baseUrl = options?.aiBaseUrl?.trim()
 
-        clearTimeout(timeoutId)
+        if (baseUrl) {
+            let endpoint = baseUrl.replace(/\/+$/, '')
+            if (!endpoint.endsWith('/chat/completions')) {
+                endpoint = endpoint.endsWith('/v1') ? `${endpoint}/chat/completions` : `${endpoint}/v1/chat/completions`
+            }
+            const model = options?.aiModel?.trim() || 'llama3'
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+            }
+            if (options?.aiApiKey?.trim()) {
+                headers['Authorization'] = `Bearer ${options.aiApiKey.trim()}`
+            }
 
-        if (!response.ok) {
-            return []
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a concise assistant that generates Bing search queries in JSON format.'
+                        },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.5
+                }),
+                signal: controller.signal
+            })
+
+            clearTimeout(timeoutId)
+            if (!response.ok) return []
+            const data = (await response.json()) as { choices?: { message?: { content?: string } }[] }
+            rawText = data?.choices?.[0]?.message?.content ?? ''
+        } else {
+            const model = options?.aiModel?.trim() || 'openai'
+            const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${encodeURIComponent(model)}`
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                signal: controller.signal
+            })
+
+            clearTimeout(timeoutId)
+            if (!response.ok) return []
+            rawText = await response.text()
         }
-
-        const rawText = await response.text()
         let queries: string[] = []
 
         // Extract JSON array via regex

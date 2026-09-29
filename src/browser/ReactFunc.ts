@@ -288,7 +288,7 @@ export default class ReactFunc {
         walk(obj)
         return strings
             .join(' ')
-            .replace(/[^\p{L}\p{N}\s\-]/gu, ' ')
+            .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
             .replace(/\s+/g, ' ')
             .trim()
     }

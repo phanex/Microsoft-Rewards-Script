@@ -49,6 +49,9 @@ export interface ConfigExperimental {
     blockMedia: boolean
     edgeBrowsing: boolean
     aiQueryGenerator?: boolean
+    aiBaseUrl?: string
+    aiApiKey?: string
+    aiModel?: string
 }
 
 export interface ConfigProxy {

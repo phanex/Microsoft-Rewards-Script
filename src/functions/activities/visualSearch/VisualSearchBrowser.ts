@@ -33,133 +33,6 @@ interface ParsedReport {
 export class VisualSearchBrowser {
     constructor(private readonly bot: MicrosoftRewardsBot) {}
 
-    public async performNative(seedUrl: string): Promise<VisualSearchReport> {
-        const sourcePage = this.bot.mainDesktopPage
-        if (!sourcePage || sourcePage.isClosed()) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                'VISUAL-SEARCH',
-                'Desktop page is unavailable - cannot run the visual-search browser flow'
-            )
-            return this.emptyReport()
-        }
-
-        let visualPage: Page | null = null
-        try {
-            visualPage = await sourcePage.context().newPage()
-
-            const reported: { data: { status: number; ok: boolean; text: string; ig: string | null } | null } = {
-                data: null
-            }
-            visualPage.on('response', async res => {
-                try {
-                    const u = new URL(res.url())
-                    if (
-                        u.origin === URLs.bing.origin &&
-                        u.pathname.toLowerCase().includes('/rewardsapp/reportactivity')
-                    ) {
-                        const ig = u.searchParams.get('IG')
-                        const status = res.status()
-                        const ok = res.ok()
-                        const text = await res.text().catch(() => '')
-                        reported.data = { status, ok, text, ig }
-                    }
-                } catch {}
-            })
-
-            const targetUrl = `${URLs.bing.origin}/?features=vsstreak,vstooltip&form=ML2XES`
-            this.bot.logger.info(
-                this.bot.isMobile,
-                'VISUAL-SEARCH',
-                `Opening native visual search page | seed=${seedUrl.slice(0, 80)}`,
-                'blue'
-            )
-            await visualPage.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 })
-
-            // Click visual search camera button on Bing homepage
-            const camBtn = await visualPage.waitForSelector(
-                '#sb_sbi, #sb_sbip, #sbiarea, .camera.icon, .sbi_hpicn, [aria-label*="Bild"], [aria-label*="Visual"]',
-                { timeout: 10000 }
-            ).catch(() => null)
-
-            if (!camBtn) {
-                this.bot.logger.warn(
-                    this.bot.isMobile,
-                    'VISUAL-SEARCH',
-                    'Visual search camera button not found on Bing homepage'
-                )
-                return this.emptyReport()
-            }
-
-            await camBtn.click().catch(() => {})
-            await this.bot.utils.wait(this.bot.utils.randomDelay(1500, 2500))
-
-            // Wait for image paste input #sb_imgpst
-            const input = await visualPage.waitForSelector('#sb_imgpst', { timeout: 8000 }).catch(() => null)
-            if (!input) {
-                this.bot.logger.warn(
-                    this.bot.isMobile,
-                    'VISUAL-SEARCH',
-                    'Visual search input #sb_imgpst not found after clicking camera button'
-                )
-                return this.emptyReport()
-            }
-
-            await input.fill(seedUrl)
-            await this.bot.utils.wait(this.bot.utils.randomDelay(800, 1500))
-            await Promise.all([
-                visualPage.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {}),
-                input.press('Enter')
-            ])
-            await visualPage.waitForSelector('#vs_results, .vs_content, .iusc, #b_results, .b_algo', { timeout: 10000 }).catch(() => {})
-
-            // Human-like scrolling on the results page
-            await visualPage.evaluate(() => {
-                window.scrollBy({ top: 350 + Math.floor(Math.random() * 200), behavior: 'smooth' })
-            }).catch(() => {})
-            await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 3500))
-
-            // Hover on first result
-            const firstResult = await visualPage.$('.vs_content a, #vs_results a, .iusc, .b_algo a').catch(() => null)
-            if (firstResult) {
-                await firstResult.hover().catch(() => {})
-                await this.bot.utils.wait(this.bot.utils.randomDelay(1000, 2000))
-            }
-
-            // Scroll slightly more and settle
-            await visualPage.evaluate(() => {
-                window.scrollBy({ top: 250 + Math.floor(Math.random() * 200), behavior: 'smooth' })
-            }).catch(() => {})
-            await this.bot.utils.wait(this.bot.utils.randomDelay(3000, 5000))
-
-            const acknowledged = reported.data ? reported.data.ok : true
-            const parsed = reported.data ? this.parseReport(reported.data.text) : this.emptyParsedReport()
-            const ig = reported.data ? reported.data.ig : null
-            const gained =
-                parsed.balance !== null && parsed.previousBalance !== null
-                    ? parsed.balance - parsed.previousBalance
-                    : null
-
-            this.bot.logger.info(
-                this.bot.isMobile,
-                'VISUAL-SEARCH',
-                `Native visual search completed | status=${reported.data ? reported.data.status : 200}` +
-                    ` | acknowledged=${acknowledged} | currentBalance=${parsed.balance ?? 'n/a'}`
-            )
-
-            return { acknowledged, ig, ...parsed, gained }
-        } catch (error) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                'VISUAL-SEARCH',
-                `Native visual search flow failed | ${error instanceof Error ? error.message : String(error)}`
-            )
-            return this.emptyReport()
-        } finally {
-            await visualPage?.close().catch(() => {})
-        }
-    }
-
     public async report(candidate: VisualSearchCandidate): Promise<VisualSearchReport> {
         const sourcePage = this.bot.mainDesktopPage
         if (!sourcePage || sourcePage.isClosed()) {
@@ -180,59 +53,21 @@ export class VisualSearchBrowser {
                         if (response.request().method() !== 'POST') return false
                         try {
                             const url = new URL(response.url())
-                            const isReport =
-                                url.origin === URLs.bing.origin &&
-                                url.pathname.toLowerCase().includes('/rewardsapp/reportactivity')
-                            if (!isReport) return false
-                            const bcid = url.searchParams.get('bcid')
                             return (
-                                !bcid ||
-                                bcid === candidate.bcid ||
-                                candidate.bcid.startsWith(bcid) ||
-                                bcid.startsWith(candidate.bcid)
+                                url.origin === URLs.bing.origin &&
+                                url.pathname.toLowerCase() === '/rewardsapp/reportactivity' &&
+                                url.searchParams.get('bcid') === candidate.bcid
                             )
                         } catch {
                             return false
                         }
                     },
-                    { timeout: 25000 }
+                    { timeout: 20000 }
                 )
                 .catch(() => null)
 
-            await visualPage.goto(candidate.serpUrl, { waitUntil: 'load', timeout: 25000 }).catch(async () => {
-                await visualPage?.goto(candidate.serpUrl, { waitUntil: 'domcontentloaded', timeout: 20000 })
-            })
-
+            await visualPage.goto(candidate.serpUrl, { waitUntil: 'domcontentloaded', timeout: 20000 })
             const response = await responsePromise
-
-            // Wait for visual search content elements to appear
-            await visualPage
-                .waitForSelector('#vs_results, .vs_content, .iusc, #b_results, .b_algo', { timeout: 6000 })
-                .catch(() => {})
-
-            // Simulate realistic scrolling on the result page
-            await visualPage
-                .evaluate(() => {
-                    window.scrollBy({ top: 350 + Math.floor(Math.random() * 200), behavior: 'smooth' })
-                })
-                .catch(() => {})
-            await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 3500))
-
-            // Hover on first visual result
-            const firstResult = await visualPage.$('.vs_content a, #vs_results a, .iusc, .b_algo a').catch(() => null)
-            if (firstResult) {
-                await firstResult.hover().catch(() => {})
-                await this.bot.utils.wait(this.bot.utils.randomDelay(1000, 2000))
-            }
-
-            // Scroll slightly more
-            await visualPage
-                .evaluate(() => {
-                    window.scrollBy({ top: 250 + Math.floor(Math.random() * 200), behavior: 'smooth' })
-                })
-                .catch(() => {})
-            await this.bot.utils.wait(this.bot.utils.randomDelay(2500, 4000))
-
             if (!response) {
                 this.bot.logger.warn(
                     this.bot.isMobile,
@@ -287,20 +122,8 @@ export class VisualSearchBrowser {
             }
 
             const seed = imageUrl ?? (await this.getSeedUrls())[0] ?? STATIC_SEED_URL
-            const cookies = await page.context().cookies(URLs.bing.origin).catch(() => [])
-            const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ')
-
-            const headers: Record<string, string> = {
-                ...(this.bot.fingerprint?.headers ?? {}),
-                Accept: 'application/json',
-                'Content-Type': `multipart/form-data; boundary=----WebKitFormBoundary`,
-                Referer: `${URLs.bing.origin}/`,
-                Origin: URLs.bing.origin,
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                ...(cookieHeader ? { Cookie: cookieHeader } : {})
-            }
+            const headers = { ...(this.bot.fingerprint?.headers ?? {}) }
+            delete headers['Cookie']
             delete headers['cookie']
 
             const encodedSeed = encodeURIComponent(seed)
@@ -308,10 +131,17 @@ export class VisualSearchBrowser {
                 `${URLs.bing.origin}/images/kblob` +
                 `?iss=sbi&form=SBIHMP&sbisrc=UrlPaste&vsimg=${encodedSeed}&imgurl=${encodedSeed}`
             const boundary = `----WebKitFormBoundary${randomBytes(8).toString('hex')}`
-            headers['Content-Type'] = `multipart/form-data; boundary=${boundary}`
-
             const response = await page.request.post(url, {
-                headers,
+                headers: {
+                    ...headers,
+                    Accept: 'application/json',
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                    Referer: `${URLs.bing.origin}/visualsearch`,
+                    Origin: URLs.bing.origin,
+                    'Sec-Fetch-Dest': 'empty',
+                    'Sec-Fetch-Mode': 'cors',
+                    'Sec-Fetch-Site': 'same-origin'
+                },
                 data: this.buildMultipart(boundary),
                 timeout: 20000
             })
@@ -360,60 +190,6 @@ export class VisualSearchBrowser {
 
     public async getSeedUrls(): Promise<string[]> {
         const page = this.bot.mainDesktopPage
-        const flickrSeeds: string[] = []
-
-        // 1. Try Flickr public feed (real high-quality user photos, avoiding flagged Bing wallpapers)
-        try {
-            const flickrUrl =
-                'https://www.flickr.com/services/feeds/photos_public.gne?tags=nature,landscape,travel,city&tagmode=any&format=json&nojsoncallback=1'
-            interface FlickrFeed {
-                items?: { media?: { m?: string } }[]
-            }
-            let flickrJson: FlickrFeed | null = null
-
-            if (page && !page.isClosed()) {
-                const response = await page.request.get(flickrUrl, { timeout: 10000 })
-                if (response.ok()) {
-                    flickrJson = (await response.json()) as FlickrFeed
-                }
-            }
-            if (!flickrJson) {
-                const res = await fetch(flickrUrl, { signal: AbortSignal.timeout(10000) })
-                if (res.ok) {
-                    flickrJson = (await res.json()) as FlickrFeed
-                }
-            }
-
-            const items = flickrJson?.items
-            if (Array.isArray(items) && items.length > 0) {
-                for (const item of items) {
-                    const m = item.media?.m
-                    if (typeof m === 'string' && m.startsWith('http')) {
-                        // Use larger size _b.jpg (1024px) for better visual search feature detection
-                        flickrSeeds.push(m.replace('_m.jpg', '_b.jpg'))
-                    }
-                }
-            }
-        } catch (error) {
-            this.bot.logger.debug(
-                this.bot.isMobile,
-                'VISUAL-SEARCH-BCID',
-                `Flickr feed lookup failed | ${error instanceof Error ? error.message : String(error)}`
-            )
-        }
-
-        if (flickrSeeds.length > 0) {
-            this.bot.utils.shuffleArray(flickrSeeds)
-            this.bot.logger.info(
-                this.bot.isMobile,
-                'VISUAL-SEARCH-BCID',
-                `Prepared ${flickrSeeds.length} external photo seed(s) from Flickr feed`,
-                'blue'
-            )
-            return flickrSeeds
-        }
-
-        // 2. Fallback to Bing HPImageArchive
         if (!page || page.isClosed()) {
             this.bot.logger.warn(
                 this.bot.isMobile,
@@ -498,32 +274,17 @@ export class VisualSearchBrowser {
 
     private parseReport(data: unknown): ParsedReport {
         if (typeof data !== 'string') return this.emptyParsedReport()
-
-        let rawObj: Record<string, unknown> | null = null
-
         const match = data.match(/ModernRewards\.ReportActivity\((\{[\s\S]*?\})\)\s*;/)
-        if (match && match[1]) {
-            try {
-                rawObj = JSON.parse(match[1]) as Record<string, unknown>
-            } catch {}
-        }
-
-        if (!rawObj) {
-            try {
-                rawObj = JSON.parse(data) as Record<string, unknown>
-            } catch {}
-        }
-
-        if (!rawObj) return this.emptyParsedReport()
+        if (!match) return this.emptyParsedReport()
 
         try {
-            const session = (rawObj.RewardsSessionData ?? rawObj.rewardsSessionData ?? rawObj) as Record<string, unknown>
+            const session = JSON.parse(match[1] ?? '{}').RewardsSessionData ?? {}
             const numberOrNull = (value: unknown): number | null => (typeof value === 'number' ? value : null)
             return {
-                balance: numberOrNull(session.Balance ?? session.balance ?? session.CurrentPoints ?? session.currentPoints),
-                previousBalance: numberOrNull(session.PreviousBalance ?? session.previousBalance),
-                searchPointsEarned: numberOrNull(session.DailySearchPointsEarned ?? session.dailySearchPointsEarned),
-                searchPointsLimit: numberOrNull(session.DailySearchPointsLimit ?? session.dailySearchPointsLimit)
+                balance: numberOrNull(session.Balance),
+                previousBalance: numberOrNull(session.PreviousBalance),
+                searchPointsEarned: numberOrNull(session.DailySearchPointsEarned),
+                searchPointsLimit: numberOrNull(session.DailySearchPointsLimit)
             }
         } catch {
             return this.emptyParsedReport()

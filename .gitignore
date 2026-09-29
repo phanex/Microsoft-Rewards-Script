@@ -10,5 +10,7 @@ note
 .playwright-chromium-installed
 .stfolder/
 .env
+/custom.json
+/failed.json
 *.saz
 saz*

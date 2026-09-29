@@ -198,7 +198,12 @@ export async function getSearchOnBingQueries(
             const aiQueries = await generateAiQueries(
                 promotion.title ?? '',
                 promotion.description ?? '',
-                failedQueries
+                failedQueries,
+                {
+                    aiBaseUrl: bot.config.experimental.aiBaseUrl,
+                    aiApiKey: bot.config.experimental.aiApiKey,
+                    aiModel: bot.config.experimental.aiModel
+                }
             )
             if (aiQueries.length > 0) {
                 bot.logger.info(

@@ -139,7 +139,7 @@ export const ConfigSchema = z.object({
         runOnZeroPoints: z.boolean().default(false),
         maxBonusSearches: z.number().default(110),
         parallelSearching: z.boolean(),
-        clusterSearch: z.boolean().default(true),
+        clusterSearch: z.boolean().default(false),
         queryEngines: z.array(QueryEngineSchema),
         searchResultVisitTime: NumberOrString,
         searchDelay: DelaySchema,
@@ -151,7 +151,10 @@ export const ConfigSchema = z.object({
             apiSearchOnBing: z.boolean().default(false),
             blockMedia: z.boolean().default(false),
             edgeBrowsing: z.boolean().default(false),
-            aiQueryGenerator: z.boolean().default(false)
+            aiQueryGenerator: z.boolean().default(false),
+            aiBaseUrl: z.string().optional(),
+            aiApiKey: z.string().optional(),
+            aiModel: z.string().optional()
         })
         .default({
             apiSearch: false,
