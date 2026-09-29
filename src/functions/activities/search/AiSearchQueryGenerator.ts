@@ -28,17 +28,39 @@ export async function generateAiQueries(
 
     if (!cleanTitle && !cleanDesc) return []
 
-    let prompt = `Generate 2 to 3 short Bing search queries in the task's language for the following Microsoft Rewards activity:\n`
-    prompt += `Title: "${cleanTitle}"\n`
-    if (cleanDesc) {
-        prompt += `Description: "${cleanDesc}"\n`
+    // Check for optional custom prompt template file
+    const customPromptPath = [
+        path.join(process.cwd(), 'config', 'ai-prompt.txt'),
+        path.join(process.cwd(), 'ai-prompt.txt')
+    ].find(p => fs.existsSync(p))
+
+    let prompt = ''
+    if (customPromptPath) {
+        try {
+            const template = fs.readFileSync(customPromptPath, 'utf8')
+            prompt = template
+                .replace(/\{\{title\}\}/g, cleanTitle)
+                .replace(/\{\{description\}\}/g, cleanDesc)
+                .replace(/\{\{failedQueries\}\}/g, JSON.stringify(failedQueries))
+        } catch {}
     }
-    if (failedQueries.length > 0) {
-        prompt += `The following queries FAILED and must NOT be repeated: ${JSON.stringify(failedQueries)}\n`
+
+    if (!prompt) {
+        prompt = `Generate 2 to 3 natural Bing search queries in the language of the task for this Microsoft Rewards activity:\n`
+        prompt += `Title: "${cleanTitle}"\n`
+        if (cleanDesc) {
+            prompt += `Description: "${cleanDesc}"\n`
+        }
+        prompt += `\nGuidelines:\n`
+        prompt += `- Do NOT simply rephrase or repeat the card title or description.\n`
+        prompt += `- Produce realistic, concrete searches that a real human would type. If the task is about travel, food, recipes, flights, shopping, events, or outdoor activities, generate specific real-world entities, locations, destinations, or dish names (e.g. for flights -> "flights London to Rome", for recipes -> "authentic pasta carbonara recipe", for hiking -> "Bavarian Alps hiking trails", for shopping -> "wireless noise cancelling headphones").\n`
+        if (failedQueries.length > 0) {
+            prompt += `- The following queries already FAILED and must NOT be repeated: ${JSON.stringify(failedQueries)}\n`
+        }
+        prompt += `\nOutput format must be strictly a JSON array of strings (2 to 5 words each), for example:\n`
+        prompt += `["query 1", "query 2"]\n`
+        prompt += `Return ONLY the JSON array without any markdown formatting or extra text.`
     }
-    prompt += `\nOutput format must be strictly a JSON array of strings (2 to 4 words each), for example:\n`
-    prompt += `["query 1", "query 2"]\n`
-    prompt += `Return ONLY the JSON array without any markdown formatting or extra text.`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
