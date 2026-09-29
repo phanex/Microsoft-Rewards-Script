@@ -76,7 +76,9 @@ export async function generateAiQueries(
             }
             const model = options?.aiModel?.trim() || 'llama3'
             const headers: Record<string, string> = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://github.com/phanex/Microsoft-Rewards-Script',
+                'X-Title': 'Microsoft Rewards Script'
             }
             if (options?.aiApiKey?.trim()) {
                 headers['Authorization'] = `Bearer ${options.aiApiKey.trim()}`
