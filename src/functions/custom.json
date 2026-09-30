@@ -172,5 +172,35 @@
             "Starfield review",
             "best Xbox Series X games"
         ]
+    },
+    {
+        "title": "ENUS_bankaccounts_exploreonbing_activation_Evergreen",
+        "queries": [
+            "best high yield savings accounts",
+            "best checking accounts with no fees",
+            "compare bank accounts online",
+            "top savings account interest rates",
+            "best online banks",
+            "how to open a checking account",
+            "best student bank accounts",
+            "high interest checking accounts",
+            "bank account bonuses and promotions",
+            "best business bank accounts"
+        ]
+    },
+    {
+        "title": "ENUS_rentalcars_exploreonbing_activation_Evergreen",
+        "queries": [
+            "cheap car rental deals",
+            "best car rental companies",
+            "airport car rental rates",
+            "rental car discounts and coupons",
+            "compare car rental prices",
+            "luxury car rental deals",
+            "one way car rental rates",
+            "car rental insurance options",
+            "weekend car rental deals",
+            "electric car rental options"
+        ]
     }
 ]

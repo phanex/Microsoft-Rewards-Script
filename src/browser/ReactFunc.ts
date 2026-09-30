@@ -263,34 +263,39 @@ export default class ReactFunc {
     }
 
     /**
-     * Extracts and flattens all readable text content from a card object into a single
-     * clean line of alphanumeric words and spaces for easy readability in failure logs.
+     * Recursively extracts readable text content from a React node,
+     * ignoring URLs, SVG paths, technical attributes, and symbols.
      */
-    private dumpCardText(obj: unknown): string {
-        const strings: string[] = []
-        const walk = (val: unknown) => {
-            if (!val) return
-            if (typeof val === 'string') {
-                const s = val.replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
-                if (s.length > 1 && !s.startsWith('$') && !s.startsWith('/')) {
-                    strings.push(s)
-                }
-            } else if (Array.isArray(val)) {
-                for (const item of val) walk(item)
-            } else if (typeof val === 'object') {
-                const rec = val as Record<string, unknown>
-                for (const key of Object.keys(rec)) {
-                    if (key === 'className' || key === 'style' || key === 'hash' || key === 'ref') continue
-                    walk(rec[key])
-                }
+    private extractCleanNodeText(node: unknown): string {
+        if (!node) return ''
+        if (typeof node === 'string') {
+            const s = node.replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
+            if (
+                s.length > 0 &&
+                !s.startsWith('$') &&
+                !s.startsWith('/') &&
+                !s.startsWith('http') &&
+                !s.includes('currentColor') &&
+                !/^M\d+/.test(s)
+            ) {
+                return s
+            }
+            return ''
+        }
+        if (Array.isArray(node)) {
+            return node
+                .map(item => this.extractCleanNodeText(item))
+                .filter(Boolean)
+                .join(' ')
+                .trim()
+        }
+        if (typeof node === 'object') {
+            const rec = node as Record<string, unknown>
+            if (rec.children !== undefined) {
+                return this.extractCleanNodeText(rec.children)
             }
         }
-        walk(obj)
-        return strings
-            .join(' ')
-            .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
+        return ''
     }
 
     /**
@@ -309,13 +314,11 @@ export default class ReactFunc {
         }
         const record = node as Record<string, unknown>
         if (typeof record.className === 'string' && record.className.includes(targetClass)) {
-            if (typeof record.children === 'string') return record.children
-            if (Array.isArray(record.children)) {
-                return record.children.filter(c => typeof c === 'string').join('')
-            }
+            const text = this.extractCleanNodeText(record.children)
+            if (text) return text
         }
         for (const key of Object.keys(record)) {
-            if (key === 'className') continue
+            if (key === 'className' || key === 'style' || key === 'd' || key === 'viewBox') continue
             const res = this.findTextByClass(record[key], targetClass)
             if (res) return res
         }
@@ -371,14 +374,14 @@ export default class ReactFunc {
                 if (!description) {
                     description = this.findTextByClass(obj, 'text-fgCtrlNeutralSecondaryRest') ?? ''
                 }
-                const cardDump = this.dumpCardText(obj)
-                if (!description) {
-                    description = cardDump
+                if (!title && isExploreOnBing) {
+                    const match = offerId.match(/(?:^|_)([a-z0-9]+)_exploreonbing/i)
+                    if (match?.[1]) {
+                        title = match[1].toLowerCase()
+                    }
                 }
-                if (!title && cardDump) {
-                    // Extract first words as fallback title if empty
-                    const words = cardDump.split(' ').slice(0, 6).join(' ')
-                    title = words || offerId
+                if (!title) {
+                    title = offerId
                 }
                 if (!points) {
                     const badgeText = this.findTextByClass(obj, 'text-statusInformativeTintFg') ?? ''

@@ -205,14 +205,15 @@ export async function getSearchOnBingQueries(
                     aiModel: bot.config.experimental.aiModel
                 }
             )
-            if (aiQueries.length > 0) {
+            const validAiQueries = aiQueries.filter(isValidBingQuery)
+            if (validAiQueries.length > 0) {
                 bot.logger.info(
                     bot.isMobile,
                     'SEARCH-ON-BING-AI',
-                    `Received ${aiQueries.length} AI queries for "${promotion.title}" | queries=${JSON.stringify(aiQueries)}`,
+                    `Received ${validAiQueries.length} AI queries for "${promotion.title}" | queries=${JSON.stringify(validAiQueries)}`,
                     'cyan'
                 )
-                return aiQueries
+                return validAiQueries
             }
             bot.logger.warn(
                 bot.isMobile,
@@ -239,11 +240,88 @@ export async function getSearchOnBingQueries(
     }
 }
 
+/**
+ * Validates that a string is a sane, human search query and not a URL,
+ * markup, SVG code, or system token.
+ */
+export function isValidBingQuery(query: string): boolean {
+    if (!query) return false
+    const q = query.trim()
+    if (q.length < 2 || q.length > 100) return false
+    // Reject URLs and protocol fragments
+    if (/^(?:https?:\/\/|www\.)/i.test(q)) return false
+    if (/https\s+www/i.test(q)) return false
+    // Reject technical markup / SVG code / CSS tokens
+    if (/\b(?:svg|path|currentColor|xmlns|viewBox|className|data-testid|div)\b/i.test(q)) return false
+    if (/^M\d+[a-z0-9\s,\-]+$/i.test(q)) return false
+    // Reject excessive word count (search queries are rarely > 10 words)
+    const words = q.split(/\s+/).filter(Boolean)
+    if (words.length > 10) return false
+    return true
+}
+
+/**
+ * Extracts a human-readable topic from Explore on Bing offer IDs
+ * (e.g. ENUS_bankaccounts_exploreonbing_activation_Evergreen -> "bank accounts")
+ */
+export function extractExploreOnBingTopic(offerId?: string): string | null {
+    if (!offerId) return null
+    const match = offerId.match(/(?:^|_)([a-z0-9]+)_exploreonbing/i)
+    if (!match || !match[1]) return null
+    const keyword = match[1].toLowerCase()
+    const knownMappings: Record<string, string> = {
+        bankaccounts: 'bank accounts',
+        rentalcars: 'rental cars',
+        airlinetickets: 'airline tickets',
+        airportparking: 'airport parking',
+        flowerdelivery: 'flower delivery',
+        streamingservices: 'streaming services',
+        creditreport: 'credit report',
+        financemarket: 'finance market',
+        videogames: 'video games',
+        timezonedates: 'time zone dates',
+        recipe: 'recipes',
+        dictionary: 'dictionary',
+        mattress: 'mattress',
+        health: 'health'
+    }
+    return knownMappings[keyword] || keyword
+}
+
 function fallbackQueries(promotion: BasePromotion): string[] {
+    const rawCandidates: string[] = []
+
+    const topic = extractExploreOnBingTopic(promotion.offerId)
+    if (topic) {
+        rawCandidates.push(topic)
+    }
+
     const title = (promotion.title ?? '').trim()
     const description = (promotion.description ?? '').trim()
     const derived = extractSearchTerm(description)
-    return [...new Set([derived, title, description].map(value => value.trim()).filter(Boolean))]
+
+    if (derived) rawCandidates.push(derived)
+    if (title && title !== promotion.offerId) rawCandidates.push(title)
+    if (description) rawCandidates.push(description)
+
+    const valid = rawCandidates
+        .map(value => value.trim())
+        .filter(isValidBingQuery)
+
+    const unique = [...new Set(valid)]
+    if (unique.length > 0) return unique
+
+    if (topic) return [topic]
+
+    const safeTitle = (promotion.title || '')
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 1 && !/^(?:https?|www|com|svg|path|div)$/i.test(w))
+        .slice(0, 5)
+        .join(' ')
+        .trim()
+
+    return safeTitle ? [safeTitle] : []
 }
 
 // Microsoft currently supplies English instruction prefixes for this fallback path.
@@ -253,7 +331,7 @@ function extractSearchTerm(description: string): string {
     return description
         .trim()
         .replace(
-            /^\s*(?:search(?:\s+on\s+bing|\s+bing|\s+the\s+web)?\s+for|look\s+up|find|explore|discover)\b[\s:]+/i,
+            /^\s*(?:search(?:\s+on\s+bing|\s+bing|\s+the\s+web)?\s+for|look\s+up|find|explore|discover|suchen\s+sie\s+nach|suche\s+nach)\b[\s:]+/i,
             ''
         )
         .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
