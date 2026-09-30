@@ -923,7 +923,7 @@ export default class BrowserFunc {
         delete fingerprintHeaders['Cookie']
         delete fingerprintHeaders['cookie']
 
-        if (isRewardsApp || !this.bot.isMobile) {
+        if (isRewardsApp) {
             fingerprintHeaders['X-Rewards-Source'] = 'msrewards-desktop'
             const currentUa = fingerprintHeaders['User-Agent'] ?? fingerprintHeaders['user-agent'] ?? ''
             if (!currentUa.includes('MSRewards/Desktop')) {
@@ -984,7 +984,7 @@ export default class BrowserFunc {
             delete headers['Cookie']
             delete headers['cookie']
 
-            if (!this.bot.isMobile || url.toLowerCase().includes('rewardsapp')) {
+            if (url.toLowerCase().includes('rewardsapp')) {
                 headers['X-Rewards-Source'] = 'msrewards-desktop'
                 const currentUa = headers['User-Agent'] ?? headers['user-agent'] ?? ''
                 if (!currentUa.includes('MSRewards/Desktop')) {
