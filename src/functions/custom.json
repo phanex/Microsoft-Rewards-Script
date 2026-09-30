@@ -204,36 +204,59 @@
         ]
     },
     {
-        "title": "ENUS_lyrics_exploreonbing_activation_Evergreen",
+        "title": "lyrics",
         "queries": [
-            "Bohemian Rhapsody Songtext",
-            "Hotel California Songtext",
-            "Rammstein Du Hast Songtext",
-            "Herbert Grönemeyer Mensch Songtext",
-            "Udo Lindenberg Songtext",
-            "Peter Fox Haus am See Songtext",
-            "Bohemian Rhapsody lyrics",
-            "Hotel California lyrics",
+            "Bing lyrics Bohemian Rhapsody",
+            "Bing lyrics Hotel California",
+            "Bing lyrics Blinding Lights",
+            "Bing lyrics Wonderwall",
+            "Bing lyrics Sweet Caroline",
+            "Bing lyrics Don't Stop Believin",
+            "Bing lyrics Billie Jean",
+            "lyrics to Mr Brightside",
+            "lyrics to Bohemian Rhapsody",
+            "Taylor Swift love story lyrics",
             "Imagine Dragons Believer lyrics",
             "Queen Don't Stop Me Now lyrics",
             "Adele Rolling in the Deep lyrics",
             "Ed Sheeran Shape of You lyrics",
             "Coldplay Viva La Vida lyrics",
             "The Beatles Hey Jude lyrics",
-            "Eminem Lose Yourself lyrics",
-            "Michael Jackson Billie Jean lyrics"
+            "Eminem Lose Yourself lyrics"
+        ]
+    },
+    {
+        "title": "ENUS_lyrics_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Bing lyrics Bohemian Rhapsody",
+            "Bing lyrics Hotel California",
+            "Bing lyrics Blinding Lights",
+            "Bing lyrics Wonderwall",
+            "Bing lyrics Sweet Caroline",
+            "Bing lyrics Don't Stop Believin",
+            "Bing lyrics Billie Jean",
+            "lyrics to Mr Brightside",
+            "lyrics to Bohemian Rhapsody",
+            "Taylor Swift love story lyrics",
+            "Imagine Dragons Believer lyrics",
+            "Queen Don't Stop Me Now lyrics",
+            "Adele Rolling in the Deep lyrics",
+            "Ed Sheeran Shape of You lyrics"
         ]
     },
     {
         "title": "Lernen Sie Liedtexte",
         "queries": [
-            "Bohemian Rhapsody Songtext",
-            "Hotel California Songtext",
-            "Rammstein Du Hast Songtext",
-            "Herbert Grönemeyer Mensch Songtext",
-            "Udo Lindenberg Songtext",
-            "Peter Fox Haus am See Songtext",
-            "Bohemian Rhapsody lyrics",
+            "Bing lyrics Bohemian Rhapsody",
+            "Bing lyrics Hotel California",
+            "Bing lyrics Blinding Lights",
+            "Bing lyrics Wonderwall",
+            "Bing lyrics Sweet Caroline",
+            "Bing lyrics Don't Stop Believin",
+            "Bing lyrics Billie Jean",
+            "lyrics to Mr Brightside",
+            "lyrics to Bohemian Rhapsody",
+            "Taylor Swift love story lyrics",
             "Imagine Dragons Believer lyrics"
         ]
     }
