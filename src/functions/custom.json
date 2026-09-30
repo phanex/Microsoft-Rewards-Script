@@ -206,6 +206,12 @@
     {
         "title": "ENUS_lyrics_exploreonbing_activation_Evergreen",
         "queries": [
+            "Bohemian Rhapsody Songtext",
+            "Hotel California Songtext",
+            "Rammstein Du Hast Songtext",
+            "Herbert Grönemeyer Mensch Songtext",
+            "Udo Lindenberg Songtext",
+            "Peter Fox Haus am See Songtext",
             "Bohemian Rhapsody lyrics",
             "Hotel California lyrics",
             "Imagine Dragons Believer lyrics",
@@ -216,6 +222,19 @@
             "The Beatles Hey Jude lyrics",
             "Eminem Lose Yourself lyrics",
             "Michael Jackson Billie Jean lyrics"
+        ]
+    },
+    {
+        "title": "Lernen Sie Liedtexte",
+        "queries": [
+            "Bohemian Rhapsody Songtext",
+            "Hotel California Songtext",
+            "Rammstein Du Hast Songtext",
+            "Herbert Grönemeyer Mensch Songtext",
+            "Udo Lindenberg Songtext",
+            "Peter Fox Haus am See Songtext",
+            "Bohemian Rhapsody lyrics",
+            "Imagine Dragons Believer lyrics"
         ]
     }
 ]

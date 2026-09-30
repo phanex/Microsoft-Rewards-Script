@@ -98,6 +98,8 @@ export class Login {
             this.passwordlessMethodSelected = false
             this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Starting login process')
 
+            await this.bot.browser.utils.disableFido(page)
+
             await page
                 .goto(URLs.rewards.userLogin, {
                     waitUntil: 'domcontentloaded'
@@ -105,7 +107,6 @@ export class Login {
                 .catch(() => {})
             await this.bot.utils.wait(2000)
             await this.bot.browser.utils.reloadBadPage(page)
-            await this.bot.browser.utils.disableFido(page)
 
             const maxIterations = 25
             let iteration = 0
@@ -198,6 +199,11 @@ export class Login {
         if (hostname === 'bing.com' || hostname.endsWith('.bing.com') || hostname === 'account.microsoft.com') {
             this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'On Bing/rewards/account page, assuming logged in')
             return 'LOGGED_IN'
+        }
+
+        if (url.pathname.includes('/fido/')) {
+            this.bot.logger.info(this.bot.isMobile, 'DETECT-STATE', 'Detected FIDO/Passkey endpoint URL')
+            return 'PASSKEY_VIDEO'
         }
 
         // Page/state selectors are checked together; page-specific routing is resolved below by priority
@@ -766,7 +772,11 @@ export class Login {
             case 'PASSKEY_VIDEO':
             case 'PASSKEY_ERROR': {
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Skipping Passkey prompt')
-                const clicked = await this.bot.browser.utils.ghostClick(page, this.selectors.secondaryButton)
+                const clicked =
+                    (await this.bot.browser.utils.ghostClick(page, this.selectors.secondaryButton)) ||
+                    (await this.bot.browser.utils.ghostClick(page, '#cancelButton')) ||
+                    (await this.bot.browser.utils.ghostClick(page, '#signInAnotherWay')) ||
+                    (await this.tryClick(page, this.selectors.backButton, 'Back button'))
                 if (!clicked) {
                     this.bot.logger.warn(this.bot.isMobile, 'LOGIN', 'Could not skip Passkey prompt')
                     return false
