@@ -123,6 +123,9 @@ export async function getSearchOnBingQueries(
             }
         }
 
+        const topic = extractExploreOnBingTopic(promotion.offerId)
+        const normTopic = topic ? bot.utils.normalizeString(topic) : ''
+
         // Helper to check if an activity entry matches the promotion
         const isMatch = (activityTitle: string): boolean => {
             const normActivity = bot.utils.normalizeString(activityTitle)
@@ -139,6 +142,9 @@ export async function getSearchOnBingQueries(
 
             // 3. Keyword match in offerId (e.g. activityTitle "recipe" in offerId "ENUS_recipe_exploreonbing...")
             if (normOfferId && normOfferId.includes(normActivity)) return true
+
+            // 4. Topic match in activityTitle (e.g. topic "lyrics" in activityTitle "learn song lyrics")
+            if (normTopic && normActivity.includes(normTopic)) return true
 
             return false
         }
