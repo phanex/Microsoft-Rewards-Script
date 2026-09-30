@@ -37,7 +37,7 @@
         "runOnZeroPoints": false,
         "maxBonusSearches": 110,
         "parallelSearching": true,
-        "clusterSearch": false,
+        "clusterSearch": true,
         "queryEngines": [
             "google",
             "wikipedia",

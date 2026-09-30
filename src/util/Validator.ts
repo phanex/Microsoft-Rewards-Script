@@ -139,7 +139,7 @@ export const ConfigSchema = z.object({
         runOnZeroPoints: z.boolean().default(false),
         maxBonusSearches: z.number().default(110),
         parallelSearching: z.boolean(),
-        clusterSearch: z.boolean().default(false),
+        clusterSearch: z.boolean().default(true),
         queryEngines: z.array(QueryEngineSchema),
         searchResultVisitTime: NumberOrString,
         searchDelay: DelaySchema,
