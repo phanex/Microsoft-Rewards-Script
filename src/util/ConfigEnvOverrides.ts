@@ -272,8 +272,8 @@ Examples:
                 report.errors.forEach(e => console.error(`[entrypoint]   ${e.message}`))
                 process.exit(1)
             }
-            report.forced.forEach(f => console.log(`[entrypoint]   .${f.path} = ${f.value} (forced)`))
-            report.applied.forEach(a => console.log(`[entrypoint]   .${a.path} = ${JSON.stringify(a.value)}`))
+            report.forced.forEach(f => console.log(`[entrypoint]   .${f.path} (forced)`))
+            report.applied.forEach(a => console.log(`[entrypoint]   .${a.path} (configured)`))
             console.log(`[entrypoint] Applied ${report.applied.length} override(s).`)
             process.exit(0)
         } catch (err) {

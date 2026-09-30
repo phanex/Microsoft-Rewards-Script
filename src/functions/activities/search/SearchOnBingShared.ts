@@ -202,7 +202,12 @@ export async function getSearchOnBingQueries(
                 {
                     aiBaseUrl: bot.config.experimental.aiBaseUrl,
                     aiApiKey: bot.config.experimental.aiApiKey,
-                    aiModel: bot.config.experimental.aiModel
+                    aiModel: bot.config.experimental.aiModel,
+                    logger: {
+                        warn: msg => bot.logger.warn(bot.isMobile, 'SEARCH-ON-BING-AI', msg),
+                        error: msg => bot.logger.error(bot.isMobile, 'SEARCH-ON-BING-AI', msg),
+                        debug: msg => bot.logger.debug(bot.isMobile, 'SEARCH-ON-BING-AI', msg)
+                    }
                 }
             )
             const validAiQueries = aiQueries.filter(isValidBingQuery)

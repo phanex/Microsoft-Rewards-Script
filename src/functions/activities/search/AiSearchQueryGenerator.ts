@@ -10,6 +10,11 @@ export interface AiModelOptions {
     aiBaseUrl?: string
     aiApiKey?: string
     aiModel?: string
+    logger?: {
+        warn: (msg: string) => void
+        error: (msg: string) => void
+        debug: (msg: string) => void
+    }
 }
 
 /**
@@ -62,8 +67,9 @@ export async function generateAiQueries(
         prompt += `Return ONLY the JSON array without any markdown formatting or extra text.`
     }
 
+    const timeoutMs = options?.aiBaseUrl ? 60000 : 20000
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
         let rawText = ''
@@ -102,7 +108,11 @@ export async function generateAiQueries(
             })
 
             clearTimeout(timeoutId)
-            if (!response.ok) return []
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '')
+                options?.logger?.warn(`AI API returned error ${response.status}: ${errText.slice(0, 200)}`)
+                return []
+            }
             const data = (await response.json()) as { choices?: { message?: { content?: string } }[] }
             rawText = data?.choices?.[0]?.message?.content ?? ''
         } else {
@@ -117,7 +127,11 @@ export async function generateAiQueries(
             })
 
             clearTimeout(timeoutId)
-            if (!response.ok) return []
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '')
+                options?.logger?.warn(`AI API returned error ${response.status}: ${errText.slice(0, 200)}`)
+                return []
+            }
             rawText = await response.text()
         }
         let queries: string[] = []
@@ -145,8 +159,13 @@ export async function generateAiQueries(
 
         const failedSet = new Set(failedQueries.map(q => q.trim().toLowerCase()))
         return [...new Set(queries)].filter(q => q.length > 0 && !failedSet.has(q.toLowerCase()))
-    } catch {
+    } catch (error) {
         clearTimeout(timeoutId)
+        if (controller.signal.aborted) {
+            options?.logger?.warn(`AI request timed out after ${timeoutMs / 1000}s`)
+        } else {
+            options?.logger?.warn(`AI request failed: ${error instanceof Error ? error.message : String(error)}`)
+        }
         return []
     }
 }

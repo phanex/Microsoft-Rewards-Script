@@ -202,5 +202,20 @@
             "weekend car rental deals",
             "electric car rental options"
         ]
+    },
+    {
+        "title": "ENUS_lyrics_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Bohemian Rhapsody lyrics",
+            "Hotel California lyrics",
+            "Imagine Dragons Believer lyrics",
+            "Queen Don't Stop Me Now lyrics",
+            "Adele Rolling in the Deep lyrics",
+            "Ed Sheeran Shape of You lyrics",
+            "Coldplay Viva La Vida lyrics",
+            "The Beatles Hey Jude lyrics",
+            "Eminem Lose Yourself lyrics",
+            "Michael Jackson Billie Jean lyrics"
+        ]
     }
 ]
