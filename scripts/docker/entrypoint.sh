@@ -77,10 +77,18 @@ echo "[entrypoint] Config ready."
 # Link the generated config back to the root so the app script can find it
 ln -sf "$CONFIG_FILE" "$SCRIPT_DIR/config.json"
 
+# Compatibility: in v4, sessions are stored in $SCRIPT_DIR/sessions (SQLite sessions.db).
+# If a legacy volume is mounted to $SCRIPT_DIR/browser/sessions, link it.
+if [ -d "$SCRIPT_DIR/browser/sessions" ] && [ ! -d "$SCRIPT_DIR/sessions" ]; then
+  mkdir -p "$SCRIPT_DIR/browser/sessions"
+  ln -s "$SCRIPT_DIR/browser/sessions" "$SCRIPT_DIR/sessions"
+fi
+
 # Enforce ownership for PUID/PGID if provided
 if [ -n "${PUID:-}" ] && [ -n "${PGID:-}" ]; then
   echo "[entrypoint] Setting ownership of config and sessions to ${PUID}:${PGID}..."
   [ -d "$SCRIPT_DIR/config" ] && chown -R "${PUID}:${PGID}" "$SCRIPT_DIR/config" 2>/dev/null || true
+  [ -d "$SCRIPT_DIR/sessions" ] && chown -R "${PUID}:${PGID}" "$SCRIPT_DIR/sessions" 2>/dev/null || true
   [ -d "$SCRIPT_DIR/browser/sessions" ] && chown -R "${PUID}:${PGID}" "$SCRIPT_DIR/browser/sessions" 2>/dev/null || true
 fi
 
