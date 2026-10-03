@@ -158,6 +158,16 @@ export class MicrosoftRewardsBot {
         return getCurrentContext().account?.email || null
     }
 
+    public formatPoints(points: number): string {
+        const [symbol, rateRaw] = this.config.currency ?? []
+        const rate = Number(rateRaw)
+        if (symbol && rate > 0) {
+            const money = (points / rate).toFixed(2)
+            return `${points} (≈${money} ${symbol})`
+        }
+        return String(points)
+    }
+
     async refreshCurrentRewardsContext(reason: string): Promise<boolean> {
         const context = getCurrentContext()
         const account = context.account
@@ -357,7 +367,7 @@ export class MicrosoftRewardsBot {
                         this.logger.info(
                             'main',
                             'ACCOUNT-END',
-                            `Completed account: ${stat.email} | pointsGained=${stat.collectedPoints} | previousBalance=${stat.initialPoints} | currentBalance=${stat.finalPoints} | durationSeconds=${stat.duration}`,
+                            `Completed account: ${stat.email} | pointsGained=${this.formatPoints(stat.collectedPoints)} | previousBalance=${this.formatPoints(stat.initialPoints)} | currentBalance=${this.formatPoints(stat.finalPoints)} | durationSeconds=${stat.duration}`,
                             'green'
                         )
                     } else {
@@ -374,7 +384,7 @@ export class MicrosoftRewardsBot {
                 this.logger.info(
                     'main',
                     'RUN-END',
-                    `Completed all accounts | accountsProcessed=${allAccountStats.length} | pointsGained=${totalCollectedPoints} | previousBalance=${totalInitialPoints} | currentBalance=${totalFinalPoints} | runtimeMinutes=${totalDurationMinutes}`,
+                    `Completed all accounts | accountsProcessed=${allAccountStats.length} | pointsGained=${this.formatPoints(totalCollectedPoints)} | previousBalance=${this.formatPoints(totalInitialPoints)} | currentBalance=${this.formatPoints(totalFinalPoints)} | runtimeMinutes=${totalDurationMinutes}`,
                     'green'
                 )
 
@@ -503,7 +513,7 @@ export class MicrosoftRewardsBot {
                         this.logger.info(
                             'main',
                             'ACCOUNT-END',
-                            `Completed account: ${accountEmail} | pointsGained=${collectedPoints} | previousBalance=${accountInitialPoints} | currentBalance=${accountFinalPoints} | durationSeconds=${durationSeconds}`,
+                            `Completed account: ${accountEmail} | pointsGained=${this.formatPoints(collectedPoints)} | previousBalance=${this.formatPoints(accountInitialPoints)} | currentBalance=${this.formatPoints(accountFinalPoints)} | durationSeconds=${durationSeconds}`,
                             'green'
                         )
                     }
@@ -550,7 +560,7 @@ export class MicrosoftRewardsBot {
                     this.logger.info(
                         'main',
                         'ACCOUNT-END',
-                        `Completed account: ${stat.email} | pointsGained=${stat.collectedPoints} | previousBalance=${stat.initialPoints} | currentBalance=${stat.finalPoints} | durationSeconds=${stat.duration}`,
+                        `Completed account: ${stat.email} | pointsGained=${this.formatPoints(stat.collectedPoints)} | previousBalance=${this.formatPoints(stat.initialPoints)} | currentBalance=${this.formatPoints(stat.finalPoints)} | durationSeconds=${stat.duration}`,
                         'green'
                     )
                 } else {
@@ -567,7 +577,7 @@ export class MicrosoftRewardsBot {
             this.logger.info(
                 'main',
                 'RUN-END',
-                `Completed all accounts | accountsProcessed=${accountStats.length} | pointsGained=${totalCollectedPoints} | previousBalance=${totalInitialPoints} | currentBalance=${totalFinalPoints} | runtimeMinutes=${totalDurationMinutes}`,
+                `Completed all accounts | accountsProcessed=${accountStats.length} | pointsGained=${this.formatPoints(totalCollectedPoints)} | previousBalance=${this.formatPoints(totalInitialPoints)} | currentBalance=${this.formatPoints(totalFinalPoints)} | runtimeMinutes=${totalDurationMinutes}`,
                 'green'
             )
 
@@ -791,12 +801,17 @@ export class MicrosoftRewardsBot {
 
                 const appAvailable = Boolean(this.accessToken && appData)
 
+                const totalEarnable =
+                    browserEarnable.mobileSearchPoints +
+                    browserEarnable.desktopSearchPoints +
+                    (appEarnable?.totalEarnablePoints ?? 0)
+
                 this.logger.info(
                     'main',
                     'POINTS',
                     `Earnable today | Mobile: ${browserEarnable.mobileSearchPoints} | Browser: ${
                         browserEarnable.desktopSearchPoints
-                    } | App: ${appEarnable?.totalEarnablePoints ?? 0} | ${accountEmail} | locale: ${this.accountLocale.locale}`
+                    } | App: ${appEarnable?.totalEarnablePoints ?? 0} | total=${this.formatPoints(totalEarnable)} | ${accountEmail} | locale: ${this.accountLocale.locale}`
                 )
 
                 const parallel = this.config.searchSettings.parallelSearching
@@ -965,7 +980,7 @@ export class MicrosoftRewardsBot {
                 this.logger.info(
                     'main',
                     'FLOW',
-                    `Points collected | pointsGained=${collectedPoints} | currentBalance=${finalPoints} | account=${accountEmail}`
+                    `Points collected | pointsGained=${this.formatPoints(collectedPoints)} | currentBalance=${this.formatPoints(finalPoints)} | account=${accountEmail}`
                 )
 
                 return {

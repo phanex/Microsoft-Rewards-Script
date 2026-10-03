@@ -169,7 +169,8 @@ export const ConfigSchema = z.object({
         ignoreCertificateErrors: z.boolean().default(false)
     }),
     consoleLogFilter: LogFilterSchema,
-    webhook: WebhookSchema
+    webhook: WebhookSchema,
+    currency: z.array(z.union([z.string(), z.number()])).optional()
 })
 
 const AccountProxySchema = z

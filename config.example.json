@@ -106,5 +106,6 @@
             "keywords": ["starting account", "select number", "collected", "Fraud_UserWarning_BotScore_UX"],
             "regexPatterns": []
         }
-    }
+    },
+    "currency": ["€", 1441]
 }
