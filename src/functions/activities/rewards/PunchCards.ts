@@ -95,10 +95,15 @@ export class PunchCards extends BaseActivity {
             }
 
             const parents = this.bot.browser.react.snapshotQuestList(earn)
-            if (parents.length) return parents
+            if (!parents.length) {
+                const dashboard = await this.bot.browser.func.getRewardsPageHtml(URLs.rewards.dashboard, '/dashboard')
+                if (dashboard) {
+                    parents.push(...this.bot.browser.react.snapshotQuestList(earn, dashboard))
+                }
+            }
 
-            const dashboard = await this.bot.browser.func.getRewardsPageHtml(URLs.rewards.dashboard, '/dashboard')
-            return dashboard ? this.bot.browser.react.snapshotQuestList(earn, dashboard) : parents
+            this.appendRewardsAppWeeklyQuest(parents)
+            return parents
         } catch (error) {
             this.bot.logger.warn(
                 this.bot.isMobile,
@@ -106,6 +111,27 @@ export class PunchCards extends BaseActivity {
                 `Failed fetching quest list | ${error instanceof Error ? error.message : String(error)}`
             )
             return null
+        }
+    }
+
+    private appendRewardsAppWeeklyQuest(parents: ParentQuest[]): void {
+        const now = new Date()
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const week = Math.min(5, Math.ceil(now.getDate() / 7))
+        const candidateId = `WW_pcparent_RewardsApp_weekly_Exclusive_${months[now.getMonth()]}w${week}_${now.getFullYear()}_punchcard`
+
+        const existing = parents.find(p => p.offerId.toLowerCase() === candidateId.toLowerCase())
+        if (!existing) {
+            parents.push({
+                offerId: candidateId,
+                title: 'Rewards App weekly Exclusive Quest',
+                pointProgressMax: 70,
+                complete: false
+            })
+        } else {
+            // Keep it actionable until all children are confirmed complete
+            existing.complete = false
+            if (existing.pointProgressMax <= 0) existing.pointProgressMax = 70
         }
     }
 

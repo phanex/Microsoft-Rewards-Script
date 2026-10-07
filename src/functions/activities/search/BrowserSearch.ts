@@ -170,6 +170,24 @@ export class Search extends BaseActivity {
                 await searchBox.fill('')
 
                 await page.keyboard.type(query, { delay: this.bot.utils.randomDelay(45, 90) })
+
+                // Inject default search engine (DSE) form attribution to progress 14-day DSE streak
+                await page.evaluate(() => {
+                    try {
+                        const form = document.querySelector('form#sb_form') as HTMLFormElement | null
+                        if (form) {
+                            let formInput = form.querySelector('input[name="form"]') as HTMLInputElement | null
+                            if (!formInput) {
+                                formInput = document.createElement('input')
+                                formInput.type = 'hidden'
+                                formInput.name = 'form'
+                                form.appendChild(formInput)
+                            }
+                            formInput.value = 'EDGBS'
+                        }
+                    } catch {}
+                }).catch(() => {})
+
                 await page.keyboard.press('Enter')
                 await this.bot.utils.wait(3000)
 
