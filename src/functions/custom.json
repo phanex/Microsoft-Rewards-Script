@@ -2,136 +2,134 @@
     {
         "title": "ENUS_recipe_exploreonbing_activation_Evergreen",
         "queries": [
+            "vegetarian dinner recipes",
+            "best chocolate chip cookies recipe",
+            "easy soup recipes",
+            "homemade pizza recipe",
+            "how to cook a steak",
             "how to make pancakes",
             "easy pasta recipe",
             "how to cook salmon",
-            "homemade pizza recipe",
             "quick dinner ideas",
             "how to make fried rice",
-            "best chocolate chip cookies recipe",
-            "vegetarian dinner recipes",
-            "how to cook a steak",
-            "easy soup recipes"
+            "Schnelle Rezepte Abendessen",
+            "Pfannkuchen Rezept einfach"
         ]
     },
     {
         "title": "ENUS_dictionary_exploreonbing_activation_Evergreen",
         "queries": [
+            "what does ubiquitous mean",
+            "meaning of resilience",
+            "define ephemeral",
             "the meaning of insert word",
             "definition of curious",
-            "curious word meaning",
-            "trump word meaning",
             "meaning of serendipity",
-            "define ephemeral",
-            "what does ubiquitous mean",
             "synonym for happy",
-            "antonym for generous",
-            "meaning of resilience"
+            "Bedeutung von Resilienz",
+            "Duden Definition",
+            "Synonym für schön"
         ]
     },
     {
         "title": "ENUS_mattress_exploreonbing_activation_Evergreen",
         "queries": [
-            "best mattress under 50",
+            "mattress deals nearby",
+            "mattress in a box reviews",
+            "how to sleep better at night",
             "best mattress for back pain",
             "top rated mattresses",
-            "memory foam vs hybrid mattress",
-            "mattress deals nearby",
-            "best mattress for side sleepers",
-            "how to sleep better at night",
-            "cooling mattress for hot sleepers",
             "best pillows for neck pain",
-            "mattress in a box reviews"
+            "best mattress for side sleepers",
+            "memory foam vs hybrid mattress",
+            "Matratzen Test 2024",
+            "Bett Matratze kaufen"
         ]
     },
     {
         "title": "ENUS_financemarket_exploreonbing_activation_Evergreen",
         "queries": [
-            "stock market",
+            "Apple stock price",
+            "Nasdaq today",
             "Nvidia stock",
+            "Microsoft stock price today",
+            "stock market",
             "nasdaq",
             "Börse e.on",
-            "Apple stock price",
-            "Microsoft stock price today",
             "Tesla share price",
             "Nvidia stock price",
             "S&P 500 today",
-            "Nasdaq today"
+            "DAX Kurs aktuell"
         ]
     },
     {
         "title": "ENUS_health_exploreonbing_activation_Evergreen",
         "queries": [
-            "check symptoms for flu",
-            "symptoms of the flu",
-            "common cold symptoms in adults",
-            "why do I have a headache",
-            "symptoms of dehydration",
+            "food poisoning symptoms and duration",
             "sore throat remedies",
             "symptoms of a sinus infection",
-            "food poisoning symptoms and duration",
+            "why do I have a headache",
+            "symptoms of the flu",
+            "common cold symptoms in adults",
+            "symptoms of dehydration",
             "what causes a migraine",
-            "signs of low iron"
+            "signs of low iron",
+            "Grippe Symptome Dauer"
         ]
     },
     {
         "title": "ENUS_creditreport_exploreonbing_activation_Evergreen",
         "queries": [
-            "how to raise credit score quickly",
-            "how to improve my credit score",
-            "check my credit score for free",
-            "what is a good credit score",
-            "why did my credit score drop",
-            "how to build credit history",
             "free credit report",
-            "credit utilisation explained",
-            "fastest way to raise credit score",
-            "how does credit score work"
+            "why did my credit score drop",
+            "how does credit score work",
+            "how to build credit history",
+            "how to raise credit score quickly",
+            "check my credit score for free",
+            "Schufa Auskunft kostenlos online beantragen",
+            "Bonitätsprüfung Schufa"
         ]
     },
     {
         "title": "ENUS_streamingservices_exploreonbing_activation_Evergreen",
         "queries": [
-            "best streaming services compared",
             "Netflix plans and prices",
             "Disney Plus subscription cost",
             "what to watch tonight",
-            "new shows on Netflix",
-            "best streaming service for movies",
-            "cheapest streaming services",
             "Amazon Prime Video cost",
+            "cheapest streaming services",
+            "new shows on Netflix",
+            "best documentaries to stream",
             "streaming bundles compared",
-            "best documentaries to stream"
+            "beste Streaming Dienste Vergleich"
         ]
     },
     {
         "title": "ENUS_flowerdelivery_exploreonbing_activation_Evergreen",
         "queries": [
-            "same day flower delivery",
-            "send flowers online",
-            "florist near me",
-            "birthday flower delivery",
-            "cheap flower delivery",
-            "next day flowers",
             "anniversary bouquet delivery",
+            "send flowers online",
+            "rose bouquet delivery",
+            "cheap flower delivery",
             "best flower delivery service",
+            "next day flowers",
             "get well soon flowers",
-            "rose bouquet delivery"
+            "birthday flower delivery",
+            "same day flower delivery",
+            "Blumen online bestellen Lieferung"
         ]
     },
     {
         "title": "ENUS_airlinetickets_exploreonbing_activation_Evergreen",
         "queries": [
-            "Flights to location",
-            "flights to nowhere",
-            "flights to fojfksikjlzksdf",
+            "cheap international flights",
             "cheap flights to Japan",
+            "cheap flights to Thailand",
             "affordable flights to New York",
             "best budget airlines",
-            "cheap flights to Thailand",
-            "flight price tracker",
-            "cheap international flights",
-            "flights to Dubai"
+            "flights to Dubai",
+            "Flug buchen billig",
+            "Flugangebote aktuell"
         ]
     },
     {
@@ -139,90 +137,229 @@
         "queries": [
             "airport parking cheapest",
             "airport parking deals",
+            "long stay airport parking",
             "cheap airport parking near me",
-            "long stay airport parking"
+            "Flughafen Parkplatz günstig buchen",
+            "Parken Flughafen Frankfurt Preise"
         ]
     },
     {
         "title": "ENUS_timezonedates_exploreonbing_activation_Evergreen",
         "queries": [
-            "time in Japan",
-            "time in New York",
             "time in London",
-            "current time in Sydney",
-            "time in Los Angeles",
             "what time is it in Tokyo",
-            "time in Dubai",
-            "time zone in India",
+            "current time in Chicago",
             "time in Singapore",
-            "current time in Chicago"
+            "time in Dubai",
+            "time in New York",
+            "current time in Sydney",
+            "Uhrzeit in New York jetzt",
+            "Uhrzeit Tokio"
         ]
     },
     {
         "title": "ENUS_videogames_exploreonbing_activation_Evergreen",
         "queries": [
-            "video games",
-            "favorite video games",
-            "cyberpunk 2077",
-            "video game",
-            "grand theft auto game play learn",
-            "Minecraft explained",
-            "Halo Infinite review",
-            "Forza Horizon 5 review",
-            "Starfield review",
-            "best Xbox Series X games"
+            "PlayStation 5 Spiele Bestseller",
+            "Grand Theft Auto 6 Release Date",
+            "Elden Ring walkthrough",
+            "Cyberpunk 2077 Phantom Liberty",
+            "Minecraft crafting recipes",
+            "Steam Top Seller Games",
+            "Xbox Series X Games 2024",
+            "Nintendo Switch Spiele Empfehlungen",
+            "best video games 2024",
+            "Fortnite updates news"
+        ]
+    },
+    {
+        "title": "ENUS_cars_exploreonbing_activation_Evergreen",
+        "queries": [
+            "neue Autos Angebote",
+            "Gebrauchtwagen kaufen Frankfurt",
+            "Elektroautos Vergleich 2024",
+            "BMW 3er Neuwagen Rabatt",
+            "Auto Leasing Angebote ohne Anzahlung"
+        ]
+    },
+    {
+        "title": "ENUS_couponcodes_exploreonbing_activation_Evergreen",
+        "queries": [
+            "neue Gutscheincodes",
+            "Amazon Gutschein Rabattcode",
+            "Otto Rabattcode aktuell",
+            "Zalando Gutscheincode 20 Prozent",
+            "Gutscheine online sparen"
+        ]
+    },
+    {
+        "title": "ENUS_homeimprovement_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Hausrenovierung Werkzeuge",
+            "Obi Baumarkt Angebote",
+            "Wand streichen Tipps",
+            "Badezimmer renovieren Kosten",
+            "Gartenhaus selber bauen Anleitung"
+        ]
+    },
+    {
+        "title": "ENUS_restaurant_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Restaurants in der Nähe Speisekarte",
+            "Beste italienische Restaurants Berlin",
+            "Sushi Restaurant Frankfurt Öffnungszeiten",
+            "Pizzeria in meiner Nähe bewertungen",
+            "Burger Restaurant Tisch reservieren",
+            "Vegetarisches Restaurant München"
+        ]
+    },
+    {
+        "title": "ENUS_jobs_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Offene Stellen BMW",
+            "Jobs bei Google München",
+            "Homeoffice Jobs Quereinsteiger",
+            "Stellenangebote Frankfurt aktuell",
+            "Softwareentwickler Stellenanzeigen"
+        ]
+    },
+    {
+        "title": "ENUS_weather_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Wettervorhersage heute",
+            "Wetter morgen Berlin",
+            "Wetterbericht Frankfurt 7 Tage",
+            "Regenradar aktuell"
+        ]
+    },
+    {
+        "title": "ENUS_petsupplies_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Haustier Spielzeug kaufen",
+            "Hundefutter Test Testsieger",
+            "Katzenkratzbaum stabil kaufen",
+            "Zooplus Angebote Gutschein"
+        ]
+    },
+    {
+        "title": "ENUS_hotel_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Hotelpreise Berlin Mitte buchen",
+            "Günstige Hotels Hamburg Hafen",
+            "Wellnesshotel Bayern Angebote",
+            "Hotel Übernachtung München buchen"
+        ]
+    },
+    {
+        "title": "ENUS_jewelry_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Schmuck für Alltag",
+            "Goldkette Damen 585 kaufen",
+            "Silberringe online shop",
+            "Ohrringe Sterling Silber"
+        ]
+    },
+    {
+        "title": "ENUS_realestate_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Wohnung mieten Frankfurt am Main",
+            "Immobilien kaufen München",
+            "Haus kaufen Berlin provisionsfrei",
+            "Mietspiegel Hamburg 2024"
+        ]
+    },
+    {
+        "title": "ENUS_sports_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Bayern München Spielplan Bundesliga",
+            "Bundesliga Tabelle aktuell",
+            "Champions League Ergebnisse gestern",
+            "Borussia Dortmund nächstes Spiel",
+            "Formel 1 Rennkalender 2024",
+            "Premier League live ticker"
+        ]
+    },
+    {
+        "title": "ENUS_insurance_exploreonbing_activation_Evergreen",
+        "queries": [
+            "beste Krankenversicherung Vergleich",
+            "Haftpflichtversicherung Test Testsieger",
+            "KFZ Versicherung wechseln Rechner",
+            "Hausratversicherung günstig online"
+        ]
+    },
+    {
+        "title": "ENUS_personalloan_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Privatkredit Vergleich günstig",
+            "Kreditrechner Ratenkredit",
+            "Kredit ohne Schufa seriös",
+            "Autokredit Zinsen Vergleich"
+        ]
+    },
+    {
+        "title": "ENUS_flight_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Flug Frankfurt Mallorca buchen",
+            "Lufthansa Flugstatus aktuell",
+            "Billige Flüge Berlin London",
+            "Flugsuche Last Minute Angebote",
+            "Flugplan Flughafen Frankfurt",
+            "Flüge buchen Skyscanner"
+        ]
+    },
+    {
+        "title": "ENUS_shopping_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Einkaufsliste Angebote",
+            "Black Friday Deals online",
+            "Elektronik Schnäppchen heute",
+            "Preisvergleich Idealo"
+        ]
+    },
+    {
+        "title": "ENUS_cellphoneplans_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Mobilfunktarife vergleichen ohne Handy",
+            "Handyvertrag mit iPhone 16",
+            "Allnet Flat monatlich kündbar",
+            "Prepaid SIM Karte günstig"
+        ]
+    },
+    {
+        "title": "ENUS_cruises_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Kreuzfahrt Angebot Mittelmeer",
+            "AIDA Kreuzfahrten Last Minute",
+            "Mein Schiff Karibik Routen",
+            "Kreuzfahrt buchen All Inclusive"
+        ]
+    },
+    {
+        "title": "ENUS_internetproviders_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Internetpläne vergleichen DSL Kabel",
+            "Glasfaser Verfügbarkeit prüfen",
+            "Günstiger Internetanschluss Zuhause",
+            "WLAN Router Vertrag wechseln"
         ]
     },
     {
         "title": "ENUS_bankaccounts_exploreonbing_activation_Evergreen",
         "queries": [
-            "best high yield savings accounts",
-            "best checking accounts with no fees",
-            "compare bank accounts online",
-            "top savings account interest rates",
-            "best online banks",
-            "how to open a checking account",
-            "best student bank accounts",
-            "high interest checking accounts",
-            "bank account bonuses and promotions",
-            "best business bank accounts"
+            "Girokonto vergleichen kostenlos",
+            "Bestes Tagesgeldkonto Zinsen",
+            "Online Bankkonto eröffnen Prämie",
+            "Festgeld Zinsen Vergleich 2024"
         ]
     },
     {
-        "title": "ENUS_rentalcars_exploreonbing_activation_Evergreen",
+        "title": "ENUS_concerttickets_exploreonbing_activation_Evergreen",
         "queries": [
-            "cheap car rental deals",
-            "best car rental companies",
-            "airport car rental rates",
-            "rental car discounts and coupons",
-            "compare car rental prices",
-            "luxury car rental deals",
-            "one way car rental rates",
-            "car rental insurance options",
-            "weekend car rental deals",
-            "electric car rental options"
-        ]
-    },
-    {
-        "title": "lyrics",
-        "queries": [
-            "Bing lyrics Bohemian Rhapsody",
-            "Bing lyrics Hotel California",
-            "Bing lyrics Blinding Lights",
-            "Bing lyrics Wonderwall",
-            "Bing lyrics Sweet Caroline",
-            "Bing lyrics Don't Stop Believin",
-            "Bing lyrics Billie Jean",
-            "lyrics to Mr Brightside",
-            "lyrics to Bohemian Rhapsody",
-            "Taylor Swift love story lyrics",
-            "Imagine Dragons Believer lyrics",
-            "Queen Don't Stop Me Now lyrics",
-            "Adele Rolling in the Deep lyrics",
-            "Ed Sheeran Shape of You lyrics",
-            "Coldplay Viva La Vida lyrics",
-            "The Beatles Hey Jude lyrics",
-            "Eminem Lose Yourself lyrics"
+            "Konzerte Tickets jetzt Eventim",
+            "Konzerttermine 2024 Deutschland",
+            "Festival Tickets Vorverkauf",
+            "Coldplay Tour Tickets Deutschland"
         ]
     },
     {
@@ -231,33 +368,36 @@
             "Bing lyrics Bohemian Rhapsody",
             "Bing lyrics Hotel California",
             "Bing lyrics Blinding Lights",
-            "Bing lyrics Wonderwall",
-            "Bing lyrics Sweet Caroline",
-            "Bing lyrics Don't Stop Believin",
-            "Bing lyrics Billie Jean",
-            "lyrics to Mr Brightside",
-            "lyrics to Bohemian Rhapsody",
-            "Taylor Swift love story lyrics",
-            "Imagine Dragons Believer lyrics",
-            "Queen Don't Stop Me Now lyrics",
-            "Adele Rolling in the Deep lyrics",
-            "Ed Sheeran Shape of You lyrics"
-        ]
-    },
-    {
-        "title": "Lernen Sie Liedtexte",
-        "queries": [
-            "Bing lyrics Bohemian Rhapsody",
-            "Bing lyrics Hotel California",
-            "Bing lyrics Blinding Lights",
-            "Bing lyrics Wonderwall",
-            "Bing lyrics Sweet Caroline",
-            "Bing lyrics Don't Stop Believin",
-            "Bing lyrics Billie Jean",
-            "lyrics to Mr Brightside",
             "lyrics to Bohemian Rhapsody",
             "Taylor Swift love story lyrics",
             "Imagine Dragons Believer lyrics"
+        ]
+    },
+    {
+        "title": "ENUS_rentalcars_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Autovermietung Frankfurt Flughafen",
+            "Mietwagen Vergleich billiger mietwagen",
+            "Sixt Mietwagen Angebote",
+            "Transporter mieten stundenweise"
+        ]
+    },
+    {
+        "title": "ENUS_creditcards_exploreonbing_activation_Evergreen",
+        "queries": [
+            "Kreditkarte mit Meilenprogramm",
+            "Beste Kreditkarte Cashback 2024",
+            "Kostenlose Kreditkarte weltweit gebührenfrei",
+            "Barclays Visa Kreditkarte"
+        ]
+    },
+    {
+        "title": "ENUS_allinclusiveresorts_exploreonbing_activation_Evergreen",
+        "queries": [
+            "All-Inclusive Resort Bali",
+            "Familienresort Türkei All Inclusive",
+            "Pauschalreise Malediven All Inclusive",
+            "Luxushotel Ägypten Strand"
         ]
     }
 ]
