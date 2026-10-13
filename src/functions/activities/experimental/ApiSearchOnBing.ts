@@ -3,7 +3,8 @@ import {
     activateSearchOnBing,
     findSearchOnBingOffer,
     getSearchOnBingQueries,
-    recordFailedSearchOnBing
+    recordFailedSearchOnBing,
+    removeResolvedSearchOnBing
 } from '../search/SearchOnBingShared'
 
 import type { BasePromotion, Dashboard } from '../../../interface/DashboardData'
@@ -44,6 +45,7 @@ export class ApiSearchOnBing extends BaseActivity {
             await this.searchBing(queries, promotion)
 
             if (this.success) {
+                removeResolvedSearchOnBing(promotion)
                 this.bot.logger.info(
                     this.bot.isMobile,
                     'SEARCH-ON-BING',

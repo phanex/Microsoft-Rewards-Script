@@ -4,7 +4,8 @@ import {
     activateSearchOnBing,
     findSearchOnBingOffer,
     getSearchOnBingQueries,
-    recordFailedSearchOnBing
+    recordFailedSearchOnBing,
+    removeResolvedSearchOnBing
 } from './SearchOnBingShared'
 import { saveSuccessfulQuery } from './AiSearchQueryGenerator'
 import { URLs } from '../../../constants/urls'
@@ -61,6 +62,7 @@ export class SearchOnBing extends BaseActivity {
             }
 
             if (this.success) {
+                removeResolvedSearchOnBing(promotion)
                 this.bot.logger.info(
                     this.bot.isMobile,
                     'SEARCH-ON-BING',

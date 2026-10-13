@@ -96,23 +96,41 @@ export async function getSearchOnBingQueries(
         }
 
         // Load custom local queries if present (e.g. localized/user-defined activities)
+        // Merge entries across candidate locations, prioritizing local configs (earlier in list)
         const customCandidates = [
             path.join(process.cwd(), 'config/custom.json'),
-            path.join(__dirname, '../../custom.json'),
             path.join(process.cwd(), 'custom.json'),
+            path.join(__dirname, '../../custom.json'),
             path.join(process.cwd(), 'src/functions/custom.json')
         ]
-        let customActivities: ActivityQueries[] = []
-        for (const candidate of customCandidates) {
-            if (fs.existsSync(candidate)) {
+        const mergedCustomMap = new Map<string, ActivityQueries>()
+        const seenCandidatePaths = new Set<string>()
+
+        // Process in reverse so earlier candidate paths overwrite/take precedence
+        for (const candidate of [...customCandidates].reverse()) {
+            const resolvedPath = path.resolve(candidate)
+            if (seenCandidatePaths.has(resolvedPath)) continue
+            seenCandidatePaths.add(resolvedPath)
+
+            if (fs.existsSync(resolvedPath)) {
                 try {
-                    customActivities = JSON.parse(fs.readFileSync(candidate, 'utf8')) as ActivityQueries[]
+                    const parsed = JSON.parse(fs.readFileSync(resolvedPath, 'utf8')) as ActivityQueries[]
+                    for (const act of parsed) {
+                        if (!act?.title || !Array.isArray(act.queries)) continue
+                        const existing = mergedCustomMap.get(act.title)
+                        if (existing) {
+                            // Merge and deduplicate queries
+                            const combined = [...new Set([...existing.queries, ...act.queries])]
+                            mergedCustomMap.set(act.title, { ...existing, queries: combined })
+                        } else {
+                            mergedCustomMap.set(act.title, { ...act })
+                        }
+                    }
                     bot.logger.debug(
                         bot.isMobile,
                         'SEARCH-ON-BING-QUERY',
-                        `Loaded ${customActivities.length} custom activity queries from ${candidate}`
+                        `Loaded ${parsed.length} custom activity queries from ${candidate}`
                     )
-                    break
                 } catch (e) {
                     bot.logger.warn(
                         bot.isMobile,
@@ -122,6 +140,7 @@ export async function getSearchOnBingQueries(
                 }
             }
         }
+        const customActivities = Array.from(mergedCustomMap.values())
 
         const topic = extractExploreOnBingTopic(promotion.offerId)
         const normTopic = topic ? bot.utils.normalizeString(topic) : ''
@@ -406,6 +425,43 @@ export function recordFailedSearchOnBing(
                 fs.chmodSync(filePath, 0o666)
             } catch {
                 // Ignore if not supported on the host OS
+            }
+        }
+    } catch {
+        // Silently ignore disk write issues so bot execution is never disrupted
+    }
+}
+
+export function removeResolvedSearchOnBing(promotion: BasePromotion): void {
+    try {
+        const configDir = path.join(process.cwd(), 'config')
+        const filePath = fs.existsSync(configDir)
+            ? path.join(configDir, 'failed.json')
+            : path.join(process.cwd(), 'failed.json')
+
+        if (!fs.existsSync(filePath)) return
+
+        let entries: FailedActivityEntry[] = []
+        try {
+            entries = JSON.parse(fs.readFileSync(filePath, 'utf8')) as FailedActivityEntry[]
+        } catch {
+            return
+        }
+
+        const offerId = promotion.offerId
+        const filtered = entries.filter(e => e.title !== offerId)
+
+        // If an entry was removed
+        if (filtered.length !== entries.length) {
+            if (filtered.length === 0) {
+                // All failed offers resolved, safely remove failed.json
+                try {
+                    fs.unlinkSync(filePath)
+                } catch {
+                    fs.writeFileSync(filePath, '[]', 'utf8')
+                }
+            } else {
+                fs.writeFileSync(filePath, JSON.stringify(filtered, null, 4), 'utf8')
             }
         }
     } catch {
