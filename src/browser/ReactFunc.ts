@@ -715,31 +715,52 @@ export default class ReactFunc {
             }
             anchors.sort((a, b) => a.at - b.at)
 
+            const chunkMap = this.buildFlightChunkMap(combined)
+
             const byId = new Map<string, ParentQuest>()
             for (let k = 0; k < anchors.length; k++) {
                 const { id, at } = anchors[k]!
                 if (!this.isParentQuestId(id)) continue
 
-                const next = anchors[k + 1]?.at ?? combined.length
-                const region = combined.slice(at, Math.min(next, at + 3000))
+                // Find the start of the next *different* parent quest,
+                // skipping sub-anchors that belong to the same quest id.
+                let next = combined.length
+                for (let j = k + 1; j < anchors.length; j++) {
+                    if (anchors[j]!.id !== id && this.isParentQuestId(anchors[j]!.id)) {
+                        next = anchors[j]!.at
+                        break
+                    }
+                }
+                let region = combined.slice(at, Math.min(next, at + 4000))
+
+                // In Next.js RSC streams, card elements may be referenced via $L<id> chunks (e.g. ["$L82", "$L83"])
+                const refMatches = [...region.matchAll(/\$L([0-9a-fA-F]+)/g)]
+                for (const ref of refMatches) {
+                    const chunk = chunkMap.get(ref[1]!)
+                    if (chunk) {
+                        region += '\n' + chunk
+                    }
+                }
 
                 const title =
                     region.match(/"alt":"((?:[^"\\]|\\.)*)"/)?.[1] ??
+                    region.match(/"text-globalBody2Strong"[^{}]*?"children":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     region.match(/"title":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     ''
 
-                const pointsMatch = region.match(/\["\+","([\d,]+)"\]/)
+                // Points badge may render as ["+","150"] or ["","150"]
+                const pointsMatch = region.match(/\["(?:|\+)","([\d,]+)"\]/)
                 const points = pointsMatch ? Number(pointsMatch[1]!.replace(/,/g, '')) : 0
-                const taskM = region.match(/(\d+)\s*\/\s*(\d+)\s*tasks/)
+                // Progress is rendered with a slash or localized word (e.g. "1/5", "1 von 8", "1 of 8", "1 sur 8")
+                const taskM = region.match(/(\d+)\s*(?:\/|von|of|de|sur)\s*(\d+)/i)
                 const complete = !!taskM && Number(taskM[1]) >= Number(taskM[2]!) && Number(taskM[2]) > 0
 
-                // First wins for title/points
                 const prev = byId.get(id)
                 byId.set(id, {
                     offerId: id,
                     title: prev?.title || title,
-                    pointProgressMax: prev?.pointProgressMax || points,
-                    complete: prev?.complete || complete
+                    pointProgressMax: Math.max(prev?.pointProgressMax || 0, points),
+                    complete: (prev && prev.complete) || complete
                 })
             }
 
@@ -777,6 +798,29 @@ export default class ReactFunc {
         const id = offerId.toLowerCase()
         if (id.includes('pcchild')) return false
         return id.includes('pcparent') || id.includes('punchcard')
+    }
+
+    private buildFlightChunkMap(combined: string): Map<string, string> {
+        const map = new Map<string, string>()
+        const chunkRe = /(?:^|\n)([0-9a-fA-F]+):/g
+        let match: RegExpExecArray | null
+        const indices: { id: string; start: number }[] = []
+
+        while ((match = chunkRe.exec(combined)) !== null) {
+            indices.push({
+                id: match[1]!,
+                start: match.index + (match[0].startsWith('\n') ? 1 : 0) + match[1]!.length + 1
+            })
+        }
+
+        for (let i = 0; i < indices.length; i++) {
+            const cur = indices[i]!
+            const nextStart =
+                i + 1 < indices.length ? indices[i + 1]!.start - (indices[i + 1]!.id.length + 2) : combined.length
+            map.set(cur.id, combined.slice(cur.start, nextStart))
+        }
+
+        return map
     }
 
     // Utils
