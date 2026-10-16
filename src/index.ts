@@ -817,7 +817,8 @@ export class MicrosoftRewardsBot {
                 const parallel = this.config.searchSettings.parallelSearching
                 const doBonus = this.config.workers.doBonusSearches
                 const doVisualSearch = this.config.workers.doVisualSearch
-                const doKeepAlive = this.config.workers.doKeepAliveSearch
+                const doKeepAlive =
+                    this.config.workers.doKeepAliveSearch || this.config.searchSettings.keepAliveSearches?.enabled
 
                 let mobilePoints = 0
                 let desktopPoints = 0

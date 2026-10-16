@@ -61,10 +61,7 @@
             "min": "30sec",
             "max": "1min"
         },
-        "keepAliveSearches": {
-            "min": 3,
-            "max": 5
-        }
+        "keepAliveSearches": false
     },
     "experimental": {
         "apiSearch": false,

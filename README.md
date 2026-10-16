@@ -228,34 +228,33 @@ Edit `config.json` to customize behavior, or set `CONFIG_*` environment variable
 
 ### Search Settings
 
-| Setting                                | Type     | Default                             | Description                                                | Docker environment variable        |
-| -------------------------------------- | -------- | ----------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| `searchSettings.scrollRandomResults`   | boolean  | `false`                             | Scroll randomly on results                                 | `CONFIG_SEARCH_SCROLL_RANDOM`      |
-| `searchSettings.clickRandomResults`    | boolean  | `false`                             | Click random links                                         | `CONFIG_SEARCH_CLICK_RANDOM`       |
-| `searchSettings.runOnZeroPoints`       | boolean  | `false`                             | Run searches even when no search points remain             | `CONFIG_SEARCH_RUN_ON_ZERO_POINTS` |
-| `searchSettings.maxBonusSearches`      | number   | `110`                               | Max bonus searches per run (when `doBonusSearches` is on)  | `CONFIG_SEARCH_MAX_BONUS_SEARCHES` |
-| `searchSettings.keepAliveSearches.min` | number   | `3`                                 | Minimum casual organic searches (when `doKeepAliveSearch`) | `CONFIG_SEARCH_KEEP_ALIVE_MIN`     |
-| `searchSettings.keepAliveSearches.max` | number   | `5`                                 | Maximum casual organic searches (when `doKeepAliveSearch`) | `CONFIG_SEARCH_KEEP_ALIVE_MAX`     |
-| `searchSettings.parallelSearching`     | boolean  | `true`                              | Run searches in parallel                                   | `CONFIG_SEARCH_PARALLEL`           |
-| `searchSettings.clusterSearch`         | boolean  | `true`                              | Cluster each main topic with Bing suggestions              | `CONFIG_SEARCH_CLUSTER`            |
-| `searchSettings.queryEngines`          | string[] | see [Query sources](#query-sources) | Sources used to build the search query pool                | `CONFIG_SEARCH_QUERY_ENGINES` \*   |
-| `searchSettings.searchResultVisitTime` | string   | `"10sec"`                           | Time to spend on each search result                        | `CONFIG_SEARCH_VISIT_TIME`         |
-| `searchSettings.searchDelay.min`       | string   | `"30sec"`                           | Minimum delay between searches                             | `CONFIG_SEARCH_DELAY_MIN`          |
-| `searchSettings.searchDelay.max`       | string   | `"1min"`                            | Maximum delay between searches                             | `CONFIG_SEARCH_DELAY_MAX`          |
-| `searchSettings.readDelay.min`         | string   | `"30sec"`                           | Minimum delay for reading                                  | `CONFIG_SEARCH_READ_DELAY_MIN`     |
-| `searchSettings.readDelay.max`         | string   | `"1min"`                            | Maximum delay for reading                                  | `CONFIG_SEARCH_READ_DELAY_MAX`     |
+| Setting                                | Type             | Default                             | Description                                               | Docker environment variable        |
+| -------------------------------------- | ---------------- | ----------------------------------- | --------------------------------------------------------- | ---------------------------------- |
+| `searchSettings.scrollRandomResults`   | boolean          | `false`                             | Scroll randomly on results                                | `CONFIG_SEARCH_SCROLL_RANDOM`      |
+| `searchSettings.clickRandomResults`    | boolean          | `false`                             | Click random links                                        | `CONFIG_SEARCH_CLICK_RANDOM`       |
+| `searchSettings.runOnZeroPoints`       | boolean          | `false`                             | Run searches even when no search points remain            | `CONFIG_SEARCH_RUN_ON_ZERO_POINTS` |
+| `searchSettings.maxBonusSearches`      | number           | `110`                               | Max bonus searches per run (when `doBonusSearches` is on) | `CONFIG_SEARCH_MAX_BONUS_SEARCHES` |
+| `searchSettings.keepAliveSearches`     | string / boolean | `false`                             | Casual organic search range e.g. `"3,5"`, `4`, or `false` | `CONFIG_SEARCH_KEEP_ALIVE`         |
+| `searchSettings.parallelSearching`     | boolean          | `true`                              | Run searches in parallel                                  | `CONFIG_SEARCH_PARALLEL`           |
+| `searchSettings.clusterSearch`         | boolean          | `true`                              | Cluster each main topic with Bing suggestions             | `CONFIG_SEARCH_CLUSTER`            |
+| `searchSettings.queryEngines`          | string[]         | see [Query sources](#query-sources) | Sources used to build the search query pool               | `CONFIG_SEARCH_QUERY_ENGINES` \*   |
+| `searchSettings.searchResultVisitTime` | string           | `"10sec"`                           | Time to spend on each search result                       | `CONFIG_SEARCH_VISIT_TIME`         |
+| `searchSettings.searchDelay.min`       | string           | `"30sec"`                           | Minimum delay between searches                            | `CONFIG_SEARCH_DELAY_MIN`          |
+| `searchSettings.searchDelay.max`       | string           | `"1min"`                            | Maximum delay between searches                            | `CONFIG_SEARCH_DELAY_MAX`          |
+| `searchSettings.readDelay.min`         | string           | `"30sec"`                           | Minimum delay for reading                                 | `CONFIG_SEARCH_READ_DELAY_MIN`     |
+| `searchSettings.readDelay.max`         | string           | `"1min"`                            | Maximum delay for reading                                 | `CONFIG_SEARCH_READ_DELAY_MAX`     |
 
 Desktop and mobile search quotas are tracked independently from the dashboard counters. All `mobileSearch` entries are combined for the mobile quota, while all `pcSearch` entries are combined for desktop execution; a counter explicitly identified as Edge is also shown separately for diagnostics. The script skips only the completed platform, so a completed `60/60` mobile quota does not prevent an incomplete desktop quota from running. With `parallelSearching` enabled, both incomplete quotas can run concurrently in their own browser contexts.
 
 #### Organic Keep-Alive Searches
 
 When scheduling the script to run periodically throughout the day (e.g. via cron every 1-2 hours), your accounts may have already reached their daily search point caps earlier in the morning.
-By keeping `runOnZeroPoints: false` and enabling `workers.doKeepAliveSearch: true`:
+By keeping `runOnZeroPoints: false` and setting `CONFIG_SEARCH_KEEP_ALIVE` (or `searchSettings.keepAliveSearches` in `config.json`):
 
-- The script skips heavy search loops that trigger stagnation backoffs on maxed accounts.
-- Instead, it performs a randomized, human-like burst of casual searches (`keepAliveSearches.min` to `keepAliveSearches.max`, 3 to 5 by default).
-- Searches naturally scroll through results and click random links (when `scrollRandomResults` / `clickRandomResults` are enabled).
-- This keeps your browser sessions fresh and simulates realistic periodic activity, protecting Bing Star Bonus trust scores without wasting time or resources.
+- **Single parameter control:** Set `false` (default) to disable; `"3,5"` to perform between 3 and 5 searches; or `"4"` to perform exactly 4 searches.
+- **Smart range parsing:** Built-in validation dynamically figures out min and max even if reversed (e.g. `"5,3"` works identically to `"3,5"`).
+- **Built-in organic browsing:** Results page scrolling and random link visits are **always active** during keep-alive runs without needing separate configuration flags.
+- **Efficient runs:** Maxed accounts skip point-stagnation delays entirely, making casual searches quick (1–2 minutes per account) and keeping Bing Star Bonus trust scores high.
 
 > [!NOTE]
 > \* Docker `CONFIG_*` array values are comma-separated strings e.g. `"error,warn"`. Regex patterns must be set directly in `config.json`.

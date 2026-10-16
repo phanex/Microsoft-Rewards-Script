@@ -50,6 +50,74 @@ const QueryEngineSchema = z.union([
         .regex(/^rss(\.[A-Za-z0-9_-]+){0,2}$/, 'Invalid rss selector (use rss, rss.<site>, or rss.<site>.<endpoint>)')
 ])
 
+export function parseKeepAlive(value: unknown): { enabled: boolean; min: number; max: number } {
+    if (value === false || value === null || value === undefined || value === '' || value === 'false') {
+        return { enabled: false, min: 0, max: 0 }
+    }
+    if (value === true || value === 'true') {
+        return { enabled: true, min: 3, max: 5 }
+    }
+    if (typeof value === 'number') {
+        const n = Math.max(1, Math.round(value))
+        return { enabled: true, min: n, max: n }
+    }
+    if (Array.isArray(value)) {
+        const nums = value.map(Number).filter(n => Number.isFinite(n) && n > 0)
+        if (nums.length === 0) return { enabled: true, min: 3, max: 5 }
+        const first = nums[0]!
+        if (nums.length === 1) return { enabled: true, min: Math.round(first), max: Math.round(first) }
+        const second = nums[1]!
+        const min = Math.round(Math.min(first, second))
+        const max = Math.round(Math.max(first, second))
+        return { enabled: true, min: Math.max(1, min), max: Math.max(1, max) }
+    }
+    if (typeof value === 'object' && value !== null) {
+        const obj = value as { min?: unknown; max?: unknown; enabled?: unknown }
+        if (obj.enabled === false) return { enabled: false, min: 0, max: 0 }
+        const minVal = Number(obj.min)
+        const maxVal = Number(obj.max)
+        if (Number.isFinite(minVal) && Number.isFinite(maxVal) && (minVal > 0 || maxVal > 0)) {
+            const min = Math.round(Math.min(minVal, maxVal))
+            const max = Math.round(Math.max(minVal, maxVal))
+            return { enabled: true, min: Math.max(1, min), max: Math.max(1, max) }
+        }
+        if (Number.isFinite(minVal) && minVal > 0) {
+            const n = Math.round(minVal)
+            return { enabled: true, min: n, max: n }
+        }
+        if (Number.isFinite(maxVal) && maxVal > 0) {
+            const n = Math.round(maxVal)
+            return { enabled: true, min: n, max: n }
+        }
+        return { enabled: true, min: 3, max: 5 }
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (trimmed === 'false' || trimmed === '0' || trimmed === '') return { enabled: false, min: 0, max: 0 }
+        if (trimmed === 'true') return { enabled: true, min: 3, max: 5 }
+        const parts = trimmed
+            .split(/[,:\-\s]+/)
+            .map(s => Number(s.trim()))
+            .filter(n => Number.isFinite(n) && n > 0)
+        if (parts.length === 0) return { enabled: false, min: 0, max: 0 }
+        const first = parts[0]!
+        if (parts.length === 1) {
+            const n = Math.round(first)
+            return { enabled: true, min: n, max: n }
+        }
+        const second = parts[1]!
+        const min = Math.round(Math.min(first, second))
+        const max = Math.round(Math.max(first, second))
+        return { enabled: true, min: Math.max(1, min), max: Math.max(1, max) }
+    }
+    return { enabled: false, min: 0, max: 0 }
+}
+
+const KeepAliveSchema = z
+    .unknown()
+    .default(false)
+    .transform(value => parseKeepAlive(value))
+
 const AccountLanguageSchema = z
     .string()
     .trim()
@@ -101,84 +169,88 @@ const WebhookSchema = z.object({
     webhookLogFilter: LogFilterSchema
 })
 
-export const ConfigSchema = z.object({
-    sessionPath: z.string(),
-    headless: z.boolean(),
-    clusters: z.number().int().nonnegative(),
-    errorDiagnostics: z.boolean(),
-    ensureStreakProtection: z.boolean(),
-    autoClaimPunchcardRewards: z.boolean(),
-    contintueOnBotWarning: z.boolean().default(false),
-    skipNonPointTasks: z.boolean().default(true),
-    accountDelay: DelaySchema.default({ min: '1min', max: '3min' }),
-    workers: z.object({
-        doDailySet: z.boolean(),
-        doMorePromotions: z.boolean(),
-        doClaimBonusPoints: z.boolean(),
-        doPunchCards: z.boolean(),
-        doAppPromotions: z.boolean(),
-        doDesktopSearch: z.boolean(),
-        doMobileSearch: z.boolean(),
-        doBonusSearches: z.boolean(),
-        doDailyCheckIn: z.boolean(),
-        doReadToEarn: z.boolean(),
-        doActivateSearchPerk: z.boolean(),
-        doVisualSearch: z.boolean().default(false),
-        doKeepAliveSearch: z.boolean().default(false)
-    }),
-    activities: z
-        .object({
-            urlReward: z.boolean().default(true),
-            searchOnBing: z.boolean().default(true)
-        })
-        .default({ urlReward: true, searchOnBing: true }),
-    searchOnBingLocalQueries: z.boolean(),
-    globalTimeout: NumberOrString,
-    searchSettings: z.object({
-        scrollRandomResults: z.boolean(),
-        clickRandomResults: z.boolean(),
-        runOnZeroPoints: z.boolean().default(false),
-        maxBonusSearches: z.number().default(110),
-        parallelSearching: z.boolean(),
-        clusterSearch: z.boolean().default(true),
-        queryEngines: z.array(QueryEngineSchema),
-        searchResultVisitTime: NumberOrString,
-        searchDelay: DelaySchema,
-        readDelay: DelaySchema,
-        keepAliveSearches: z
-            .object({
-                min: z.number().default(3),
-                max: z.number().default(5)
-            })
-            .default({ min: 3, max: 5 })
-    }),
-    experimental: z
-        .object({
-            apiSearch: z.boolean().default(false),
-            apiSearchOnBing: z.boolean().default(false),
-            blockMedia: z.boolean().default(false),
-            edgeBrowsing: z.boolean().default(false),
-            aiQueryGenerator: z.boolean().default(false),
-            aiBaseUrl: z.string().optional(),
-            aiApiKey: z.string().optional(),
-            aiModel: z.string().optional()
-        })
-        .default({
-            apiSearch: false,
-            apiSearchOnBing: false,
-            blockMedia: false,
-            edgeBrowsing: false,
-            aiQueryGenerator: false
+export const ConfigSchema = z
+    .object({
+        sessionPath: z.string(),
+        headless: z.boolean(),
+        clusters: z.number().int().nonnegative(),
+        errorDiagnostics: z.boolean(),
+        ensureStreakProtection: z.boolean(),
+        autoClaimPunchcardRewards: z.boolean(),
+        contintueOnBotWarning: z.boolean().default(false),
+        skipNonPointTasks: z.boolean().default(true),
+        accountDelay: DelaySchema.default({ min: '1min', max: '3min' }),
+        workers: z.object({
+            doDailySet: z.boolean(),
+            doMorePromotions: z.boolean(),
+            doClaimBonusPoints: z.boolean(),
+            doPunchCards: z.boolean(),
+            doAppPromotions: z.boolean(),
+            doDesktopSearch: z.boolean(),
+            doMobileSearch: z.boolean(),
+            doBonusSearches: z.boolean(),
+            doDailyCheckIn: z.boolean(),
+            doReadToEarn: z.boolean(),
+            doActivateSearchPerk: z.boolean(),
+            doVisualSearch: z.boolean().default(false),
+            doKeepAliveSearch: z.boolean().default(false)
         }),
-    debugLogs: z.boolean(),
-    proxy: z.object({
-        queryEngine: z.boolean(),
-        ignoreCertificateErrors: z.boolean().default(false)
-    }),
-    consoleLogFilter: LogFilterSchema,
-    webhook: WebhookSchema,
-    currency: z.array(z.union([z.string(), z.number()])).optional()
-})
+        activities: z
+            .object({
+                urlReward: z.boolean().default(true),
+                searchOnBing: z.boolean().default(true)
+            })
+            .default({ urlReward: true, searchOnBing: true }),
+        searchOnBingLocalQueries: z.boolean(),
+        globalTimeout: NumberOrString,
+        searchSettings: z.object({
+            scrollRandomResults: z.boolean(),
+            clickRandomResults: z.boolean(),
+            runOnZeroPoints: z.boolean().default(false),
+            maxBonusSearches: z.number().default(110),
+            parallelSearching: z.boolean(),
+            clusterSearch: z.boolean().default(true),
+            queryEngines: z.array(QueryEngineSchema),
+            searchResultVisitTime: NumberOrString,
+            searchDelay: DelaySchema,
+            readDelay: DelaySchema,
+            keepAliveSearches: KeepAliveSchema
+        }),
+        experimental: z
+            .object({
+                apiSearch: z.boolean().default(false),
+                apiSearchOnBing: z.boolean().default(false),
+                blockMedia: z.boolean().default(false),
+                edgeBrowsing: z.boolean().default(false),
+                aiQueryGenerator: z.boolean().default(false),
+                aiBaseUrl: z.string().optional(),
+                aiApiKey: z.string().optional(),
+                aiModel: z.string().optional()
+            })
+            .default({
+                apiSearch: false,
+                apiSearchOnBing: false,
+                blockMedia: false,
+                edgeBrowsing: false,
+                aiQueryGenerator: false
+            }),
+        debugLogs: z.boolean(),
+        proxy: z.object({
+            queryEngine: z.boolean(),
+            ignoreCertificateErrors: z.boolean().default(false)
+        }),
+        consoleLogFilter: LogFilterSchema,
+        webhook: WebhookSchema,
+        currency: z.array(z.union([z.string(), z.number()])).optional()
+    })
+    .transform(data => {
+        if (data.searchSettings.keepAliveSearches.enabled) {
+            data.workers.doKeepAliveSearch = true
+        } else if (data.workers.doKeepAliveSearch) {
+            data.searchSettings.keepAliveSearches = { enabled: true, min: 3, max: 5 }
+        }
+        return data
+    })
 
 const AccountProxySchema = z
     .object({
@@ -305,7 +377,7 @@ const defaultConfig: Config = {
         searchResultVisitTime: '10sec',
         searchDelay: { min: '30sec', max: '1min' },
         readDelay: { min: '30sec', max: '1min' },
-        keepAliveSearches: { min: 3, max: 5 }
+        keepAliveSearches: { enabled: false, min: 0, max: 0 }
     },
     experimental: {
         apiSearch: false,

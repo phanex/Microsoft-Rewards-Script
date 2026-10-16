@@ -26,6 +26,12 @@ export type QueryEngine = 'google' | 'wikipedia' | 'wikirandom' | 'hackernews' |
 export type RssFeedSelector = 'rss' | `rss.${string}`
 export type QueryEngineEntry = QueryEngine | RssFeedSelector
 
+export interface KeepAliveConfig {
+    enabled: boolean
+    min: number
+    max: number
+}
+
 export interface ConfigSearchSettings {
     scrollRandomResults: boolean
     clickRandomResults: boolean
@@ -37,10 +43,7 @@ export interface ConfigSearchSettings {
     searchResultVisitTime: number | string
     searchDelay: ConfigDelay
     readDelay: ConfigDelay
-    keepAliveSearches?: {
-        min: number
-        max: number
-    }
+    keepAliveSearches: KeepAliveConfig
 }
 
 export interface ConfigDelay {

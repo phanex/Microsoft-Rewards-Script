@@ -133,7 +133,7 @@ export class Search extends BaseActivity {
                 }
 
                 await this.bot.browser.func.synchronizeActiveBrowserCookies('SEARCH-COOKIE-SEED', true)
-                await this.bingSearch(page, query, isMobile)
+                await this.bingSearch(page, query, isMobile, tracker.context === 'SEARCH-KEEPALIVE')
                 stats.performed++
 
                 await this.bot.browser.func.synchronizeActiveBrowserCookies('SEARCH-COOKIE-CAPTURE')
@@ -174,7 +174,7 @@ export class Search extends BaseActivity {
             return stats
         }
     }
-    private async bingSearch(page: Page, query: string, isMobile: boolean): Promise<void> {
+    private async bingSearch(page: Page, query: string, isMobile: boolean, isKeepAlive = false): Promise<void> {
         this.searchCount++
 
         if (this.searchCount % REFRESH_EVERY === 0) {
@@ -219,11 +219,12 @@ export class Search extends BaseActivity {
                 await page.keyboard.press('Enter')
                 await this.bot.utils.wait(3000)
 
-                if (this.bot.config.searchSettings.scrollRandomResults) {
+                // Organic behavior: scrolling and random clicks are ALWAYS performed on keep-alive
+                if (isKeepAlive || this.bot.config.searchSettings.scrollRandomResults) {
                     await this.bot.utils.wait(2000)
                     await this.randomScroll(page, isMobile)
                 }
-                if (this.bot.config.searchSettings.clickRandomResults) {
+                if (isKeepAlive || this.bot.config.searchSettings.clickRandomResults) {
                     await this.bot.utils.wait(2000)
                     await this.clickRandomLink(page, isMobile)
                 }
@@ -361,9 +362,9 @@ class KeepAliveTracker implements SearchTracker {
         private isMobile: boolean
     ) {
         const cfg = this.bot.config.searchSettings.keepAliveSearches
-        const min = Math.max(1, Number(cfg?.min ?? 3))
-        const max = Math.max(min, Number(cfg?.max ?? 5))
-        this.maxSearches = Math.floor(Math.random() * (max - min + 1)) + min
+        const min = Math.max(1, Number(cfg?.min || 3))
+        const max = Math.max(min, Number(cfg?.max || 5))
+        this.maxSearches = min === max ? min : Math.floor(Math.random() * (max - min + 1)) + min
     }
 
     async prepare(): Promise<boolean> {

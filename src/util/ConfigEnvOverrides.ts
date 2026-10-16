@@ -48,6 +48,8 @@ export const ENV_OVERRIDES: EnvOverrideEntry[] = [
     { env: 'CONFIG_SEARCH_VISIT_TIME', path: 'searchSettings.searchResultVisitTime', type: 'string' },
     { env: 'CONFIG_SEARCH_RUN_ON_ZERO_POINTS', path: 'searchSettings.runOnZeroPoints', type: 'bool' },
     { env: 'CONFIG_SEARCH_MAX_BONUS_SEARCHES', path: 'searchSettings.maxBonusSearches', type: 'number' },
+    { env: 'CONFIG_SEARCH_KEEP_ALIVE', path: 'searchSettings.keepAliveSearches', type: 'string' },
+    { env: 'CONFIG_KEEP_ALIVE_SEARCH', path: 'searchSettings.keepAliveSearches', type: 'string' },
     { env: 'CONFIG_SEARCH_KEEP_ALIVE_MIN', path: 'searchSettings.keepAliveSearches.min', type: 'number' },
     { env: 'CONFIG_SEARCH_KEEP_ALIVE_MAX', path: 'searchSettings.keepAliveSearches.max', type: 'number' },
     { env: 'CONFIG_SEARCH_QUERY_ENGINES', path: 'searchSettings.queryEngines', type: 'array' },
