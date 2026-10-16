@@ -82,6 +82,25 @@ export class Search extends BaseActivity {
         return stats.totalGained
     }
 
+    public async doKeepAliveSearches(page: Page): Promise<number> {
+        const isMobile = this.bot.isMobile
+        const tracker = new KeepAliveTracker(this.bot, isMobile)
+
+        try {
+            const stats = await this.runSearchSession(page, isMobile, tracker)
+
+            this.bot.logger.info(
+                isMobile,
+                tracker.context,
+                `Keep-alive session complete | performed=${stats.performed}/${tracker.maxSearches} search(es)`,
+                stats.performed > 0 ? 'green' : undefined
+            )
+            return stats.performed
+        } finally {
+            await page.goto(URLs.bing.origin).catch(() => {})
+        }
+    }
+
     private async runSearchSession(page: Page, isMobile: boolean, tracker: SearchTracker): Promise<SessionStats> {
         const stats: SessionStats = { totalGained: 0, performed: 0, stagnant: 0 }
 
@@ -119,7 +138,14 @@ export class Search extends BaseActivity {
 
                 await this.bot.browser.func.synchronizeActiveBrowserCookies('SEARCH-COOKIE-CAPTURE')
                 const gained = await tracker.measure()
-                if (gained > 0) {
+                if (tracker.context === 'SEARCH-KEEPALIVE') {
+                    this.bot.logger.info(
+                        isMobile,
+                        tracker.context,
+                        `Casual search ${tracker.progress()} | query="${query}"`,
+                        'green'
+                    )
+                } else if (gained > 0) {
                     stats.stagnant = 0
                     stats.totalGained += gained
                     this.bot.logger.info(
@@ -172,21 +198,23 @@ export class Search extends BaseActivity {
                 await page.keyboard.type(query, { delay: this.bot.utils.randomDelay(45, 90) })
 
                 // Inject default search engine (DSE) form attribution to progress 14-day DSE streak
-                await page.evaluate(() => {
-                    try {
-                        const form = document.querySelector('form#sb_form') as HTMLFormElement | null
-                        if (form) {
-                            let formInput = form.querySelector('input[name="form"]') as HTMLInputElement | null
-                            if (!formInput) {
-                                formInput = document.createElement('input')
-                                formInput.type = 'hidden'
-                                formInput.name = 'form'
-                                form.appendChild(formInput)
+                await page
+                    .evaluate(() => {
+                        try {
+                            const form = document.querySelector('form#sb_form') as HTMLFormElement | null
+                            if (form) {
+                                let formInput = form.querySelector('input[name="form"]') as HTMLInputElement | null
+                                if (!formInput) {
+                                    formInput = document.createElement('input')
+                                    formInput.type = 'hidden'
+                                    formInput.name = 'form'
+                                    form.appendChild(formInput)
+                                }
+                                formInput.value = 'EDGBS'
                             }
-                            formInput.value = 'EDGBS'
-                        }
-                    } catch {}
-                }).catch(() => {})
+                        } catch {}
+                    })
+                    .catch(() => {})
 
                 await page.keyboard.press('Enter')
                 await this.bot.utils.wait(3000)
@@ -318,5 +346,45 @@ class PointsTracker implements SearchTracker {
 
     progress(): string {
         return `remaining=${this.missing.totalPoints}`
+    }
+}
+
+class KeepAliveTracker implements SearchTracker {
+    public readonly context = 'SEARCH-KEEPALIVE'
+    public readonly maxSearches: number
+    public readonly stagnantLimit = 999
+
+    private performed = 0
+
+    constructor(
+        private bot: MicrosoftRewardsBot,
+        private isMobile: boolean
+    ) {
+        const cfg = this.bot.config.searchSettings.keepAliveSearches
+        const min = Math.max(1, Number(cfg?.min ?? 3))
+        const max = Math.max(min, Number(cfg?.max ?? 5))
+        this.maxSearches = Math.floor(Math.random() * (max - min + 1)) + min
+    }
+
+    async prepare(): Promise<boolean> {
+        this.bot.logger.info(
+            this.isMobile,
+            this.context,
+            `Starting organic keep-alive searches | target=${this.maxSearches} search(es)`
+        )
+        return true
+    }
+
+    async measure(): Promise<number> {
+        this.performed++
+        return 0
+    }
+
+    done(): boolean {
+        return this.performed >= this.maxSearches
+    }
+
+    progress(): string {
+        return `completed=${this.performed}/${this.maxSearches}`
     }
 }

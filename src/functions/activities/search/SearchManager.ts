@@ -108,4 +108,25 @@ export class SearchManager {
         )
         return gained
     }
+
+    async keepAliveDesktop(account: Account): Promise<number> {
+        this.bot.logger.info('main', 'SEARCH-MANAGER', 'Starting keep-alive casual searches')
+
+        return await executionContext.run({ isMobile: false, account }, async () => {
+            try {
+                return await this.bot.activities.doKeepAliveSearches(this.bot.mainDesktopPage)
+            } catch (error) {
+                this.bot.logger.error(
+                    'main',
+                    'SEARCH-MANAGER',
+                    `Keep-alive search failed | ${error instanceof Error ? error.message : String(error)}`
+                )
+                return 0
+            } finally {
+                if (!this.bot.mainDesktopPage.isClosed()) {
+                    await this.bot.mainDesktopPage.goto(URLs.bing.origin).catch(() => {})
+                }
+            }
+        })
+    }
 }

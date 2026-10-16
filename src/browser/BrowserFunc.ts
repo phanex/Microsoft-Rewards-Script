@@ -177,7 +177,10 @@ export default class BrowserFunc {
                     const isRewardsApp =
                         x.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
                         x.offerId?.toLowerCase().includes('rewardsapp')
-                    if (x.promotionType === 'urlreward' && (x.exclusiveLockedFeatureStatus !== 'locked' || isRewardsApp)) {
+                    if (
+                        x.promotionType === 'urlreward' &&
+                        (x.exclusiveLockedFeatureStatus !== 'locked' || isRewardsApp)
+                    ) {
                         return sum + (x.pointProgressMax - x.pointProgress)
                     }
                     return sum
@@ -916,8 +919,7 @@ export default class BrowserFunc {
         const routerStateTree = opts?.routerStateTree ?? this.bot.nextRouterStateTree
 
         const isRewardsApp =
-            JSON.stringify(body).toLowerCase().includes('rewardsapp') ||
-            referer.toLowerCase().includes('rewardsapp')
+            JSON.stringify(body).toLowerCase().includes('rewardsapp') || referer.toLowerCase().includes('rewardsapp')
 
         const fingerprintHeaders = { ...this.bot.fingerprint.headers }
         delete fingerprintHeaders['Cookie']

@@ -23,7 +23,8 @@
         "doDailyCheckIn": true,
         "doReadToEarn": true,
         "doActivateSearchPerk": true,
-        "doVisualSearch": false
+        "doVisualSearch": false,
+        "doKeepAliveSearch": false
     },
     "activities": {
         "urlReward": true,
@@ -59,6 +60,10 @@
         "readDelay": {
             "min": "30sec",
             "max": "1min"
+        },
+        "keepAliveSearches": {
+            "min": 3,
+            "max": 5
         }
     },
     "experimental": {

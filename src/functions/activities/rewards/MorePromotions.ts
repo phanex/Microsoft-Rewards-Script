@@ -51,7 +51,8 @@ export class MorePromotions extends BaseActivity {
             promotion.offerId?.toLowerCase().includes('rewardsapp')
         if (promotion.exclusiveLockedFeatureStatus === 'locked' && !isRewardsApp) return false
         if (!promotion.promotionType) return false
-        if (promotion.priority < 0 && promotion.exclusiveLockedFeatureStatus !== 'unlocked' && !isRewardsApp) return false
+        if (promotion.priority < 0 && promotion.exclusiveLockedFeatureStatus !== 'unlocked' && !isRewardsApp)
+            return false
         return this.getAttribute(promotion, 'promotional') !== 'True'
     }
 

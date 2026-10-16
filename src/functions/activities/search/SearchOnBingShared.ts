@@ -283,7 +283,7 @@ export function isValidBingQuery(query: string): boolean {
     if (/https\s+www/i.test(q)) return false
     // Reject technical markup / SVG code / CSS tokens
     if (/\b(?:svg|path|currentColor|xmlns|viewBox|className|data-testid|div)\b/i.test(q)) return false
-    if (/^M\d+[a-z0-9\s,\-]+$/i.test(q)) return false
+    if (/^M\d+[a-z0-9\s,-]+$/i.test(q)) return false
     // Reject excessive word count (search queries are rarely > 10 words)
     const words = q.split(/\s+/).filter(Boolean)
     if (words.length > 10) return false
@@ -334,9 +334,7 @@ function fallbackQueries(promotion: BasePromotion): string[] {
     if (title && title !== promotion.offerId) rawCandidates.push(title)
     if (description) rawCandidates.push(description)
 
-    const valid = rawCandidates
-        .map(value => value.trim())
-        .filter(isValidBingQuery)
+    const valid = rawCandidates.map(value => value.trim()).filter(isValidBingQuery)
 
     const unique = [...new Set(valid)]
     if (unique.length > 0) return unique

@@ -817,6 +817,7 @@ export class MicrosoftRewardsBot {
                 const parallel = this.config.searchSettings.parallelSearching
                 const doBonus = this.config.workers.doBonusSearches
                 const doVisualSearch = this.config.workers.doVisualSearch
+                const doKeepAlive = this.config.workers.doKeepAliveSearch
 
                 let mobilePoints = 0
                 let desktopPoints = 0
@@ -849,7 +850,7 @@ export class MicrosoftRewardsBot {
                     const plan = await this.searchManager.getSearchPoints()
                     const doMobileSearch = plan.doMobile
                     const doDesktopSearch = plan.doDesktop
-                    const desktopBrowserNeeded = this.config.workers.doPunchCards || doVisualSearch
+                    const desktopBrowserNeeded = this.config.workers.doPunchCards || doVisualSearch || doKeepAlive
 
                     if (doDesktopSearch && !desktopBrowserNeeded) {
                         this.cookies.desktop = [...this.cookies.mobile]
@@ -861,6 +862,7 @@ export class MicrosoftRewardsBot {
                             desktopSession = await this.createDesktopSession(account)
                             if (this.config.workers.doPunchCards) await this.activities.doPunchCardsDesktop()
                             if (doVisualSearch) await this.activities.doVisualSearch(data)
+                            if (doKeepAlive) await this.searchManager.keepAliveDesktop(account)
                         })
                         await closeDesktopSession()
                     }
@@ -893,7 +895,10 @@ export class MicrosoftRewardsBot {
                     const doDesktopSearch = plan.doDesktop
 
                     const desktopBrowserNeeded =
-                        this.config.workers.doPunchCards || doVisualSearch || (doDesktopSearch && !apiSearch)
+                        this.config.workers.doPunchCards ||
+                        doVisualSearch ||
+                        (doDesktopSearch && !apiSearch) ||
+                        doKeepAlive
 
                     if (apiSearch && doDesktopSearch && !desktopBrowserNeeded) {
                         this.cookies.desktop = [...this.cookies.mobile]
@@ -918,7 +923,9 @@ export class MicrosoftRewardsBot {
                         }
                         const desktopWork = async (): Promise<number> => {
                             try {
-                                return await this.searchManager.searchDesktop(account)
+                                const points = await this.searchManager.searchDesktop(account)
+                                if (doKeepAlive) await this.searchManager.keepAliveDesktop(account)
+                                return points
                             } finally {
                                 await closeDesktopSession()
                             }
@@ -941,6 +948,9 @@ export class MicrosoftRewardsBot {
                                 if (doVisualSearch) await this.activities.doVisualSearch(data)
                                 if (doDesktopSearch && !apiSearch) {
                                     desktopPoints = await this.searchManager.searchDesktop(account)
+                                }
+                                if (doKeepAlive) {
+                                    await this.searchManager.keepAliveDesktop(account)
                                 }
                             })
                             await closeDesktopSession()

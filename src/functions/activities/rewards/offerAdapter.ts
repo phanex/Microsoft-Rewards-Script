@@ -25,6 +25,6 @@ export function toBasePromotion(offer: ParsedOffer): BasePromotion {
         activityType: String(offer.activityType ?? 11),
         priority: 1,
         attributes: null,
-        exclusiveLockedFeatureStatus: '',
+        exclusiveLockedFeatureStatus: ''
     } as unknown as BasePromotion
 }

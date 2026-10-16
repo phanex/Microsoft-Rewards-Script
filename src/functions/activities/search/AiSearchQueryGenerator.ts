@@ -230,7 +230,10 @@ export function saveSuccessfulQuery(offerId: string, title: string, query: strin
             entries.push(entry)
         } else {
             // Put the working query at the very front
-            entry.queries = [trimmedQuery, ...entry.queries.filter(q => q.trim().toLowerCase() !== trimmedQuery.toLowerCase())]
+            entry.queries = [
+                trimmedQuery,
+                ...entry.queries.filter(q => q.trim().toLowerCase() !== trimmedQuery.toLowerCase())
+            ]
         }
 
         // Write atomically

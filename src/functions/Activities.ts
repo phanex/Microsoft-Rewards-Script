@@ -49,6 +49,10 @@ export default class Activities {
         return await new BrowserSearch(this.bot).doBonusSearches(page)
     }
 
+    doKeepAliveSearches = async (page: Page): Promise<number> => {
+        return await new BrowserSearch(this.bot).doKeepAliveSearches(page)
+    }
+
     doSearchOnBing = async (promotion: BasePromotion, page: Page): Promise<void> => {
         if (this.bot.config.experimental.apiSearchOnBing) {
             await new ApiSearchOnBing(this.bot).doSearchOnBing(promotion)

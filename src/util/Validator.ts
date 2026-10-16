@@ -123,7 +123,8 @@ export const ConfigSchema = z.object({
         doDailyCheckIn: z.boolean(),
         doReadToEarn: z.boolean(),
         doActivateSearchPerk: z.boolean(),
-        doVisualSearch: z.boolean().default(false)
+        doVisualSearch: z.boolean().default(false),
+        doKeepAliveSearch: z.boolean().default(false)
     }),
     activities: z
         .object({
@@ -143,7 +144,13 @@ export const ConfigSchema = z.object({
         queryEngines: z.array(QueryEngineSchema),
         searchResultVisitTime: NumberOrString,
         searchDelay: DelaySchema,
-        readDelay: DelaySchema
+        readDelay: DelaySchema,
+        keepAliveSearches: z
+            .object({
+                min: z.number().default(3),
+                max: z.number().default(5)
+            })
+            .default({ min: 3, max: 5 })
     }),
     experimental: z
         .object({
@@ -278,7 +285,8 @@ const defaultConfig: Config = {
         doDailyCheckIn: true,
         doReadToEarn: true,
         doActivateSearchPerk: true,
-        doVisualSearch: false
+        doVisualSearch: false,
+        doKeepAliveSearch: false
     },
     activities: {
         urlReward: true,
@@ -296,7 +304,8 @@ const defaultConfig: Config = {
         queryEngines: ['google', 'wikipedia', 'wikirandom', 'hackernews', 'reddit', 'local'],
         searchResultVisitTime: '10sec',
         searchDelay: { min: '30sec', max: '1min' },
-        readDelay: { min: '30sec', max: '1min' }
+        readDelay: { min: '30sec', max: '1min' },
+        keepAliveSearches: { min: 3, max: 5 }
     },
     experimental: {
         apiSearch: false,

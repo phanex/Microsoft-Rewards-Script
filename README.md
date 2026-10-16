@@ -213,6 +213,7 @@ Edit `config.json` to customize behavior, or set `CONFIG_*` environment variable
 | `workers.doDesktopSearch`      | boolean | `true`  | Perform desktop searches                                                   | `CONFIG_WORKER_DESKTOP_SEARCH`       |
 | `workers.doMobileSearch`       | boolean | `true`  | Perform mobile searches                                                    | `CONFIG_WORKER_MOBILE_SEARCH`        |
 | `workers.doBonusSearches`      | boolean | `false` | Farm bonus searches beyond the cap                                         | `CONFIG_WORKER_BONUS_SEARCHES`       |
+| `workers.doKeepAliveSearch`    | boolean | `false` | Perform casual organic searches (3-5) when point quotas are complete       | `CONFIG_WORKER_KEEP_ALIVE_SEARCH`    |
 | `workers.doDailyCheckIn`       | boolean | `true`  | Complete daily check-in                                                    | `CONFIG_WORKER_DAILY_CHECKIN`        |
 | `workers.doReadToEarn`         | boolean | `true`  | Complete Read-to-Earn                                                      | `CONFIG_WORKER_READ_TO_EARN`         |
 | `workers.doActivateSearchPerk` | boolean | `true`  | Activate the "search Nx more" perk when present (runs after the daily set) | `CONFIG_WORKER_ACTIVATE_SEARCH_PERK` |
@@ -227,22 +228,34 @@ Edit `config.json` to customize behavior, or set `CONFIG_*` environment variable
 
 ### Search Settings
 
-| Setting                                | Type     | Default                             | Description                                               | Docker environment variable        |
-| -------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------- | ---------------------------------- |
-| `searchSettings.scrollRandomResults`   | boolean  | `false`                             | Scroll randomly on results                                | `CONFIG_SEARCH_SCROLL_RANDOM`      |
-| `searchSettings.clickRandomResults`    | boolean  | `false`                             | Click random links                                        | `CONFIG_SEARCH_CLICK_RANDOM`       |
-| `searchSettings.runOnZeroPoints`       | boolean  | `false`                             | Run searches even when no search points remain            | `CONFIG_SEARCH_RUN_ON_ZERO_POINTS` |
-| `searchSettings.maxBonusSearches`      | number   | `110`                               | Max bonus searches per run (when `doBonusSearches` is on) | `CONFIG_SEARCH_MAX_BONUS_SEARCHES` |
-| `searchSettings.parallelSearching`     | boolean  | `true`                              | Run searches in parallel                                  | `CONFIG_SEARCH_PARALLEL`           |
-| `searchSettings.clusterSearch`         | boolean  | `true`                              | Cluster each main topic with Bing suggestions             | `CONFIG_SEARCH_CLUSTER`            |
-| `searchSettings.queryEngines`          | string[] | see [Query sources](#query-sources) | Sources used to build the search query pool               | `CONFIG_SEARCH_QUERY_ENGINES` \*   |
-| `searchSettings.searchResultVisitTime` | string   | `"10sec"`                           | Time to spend on each search result                       | `CONFIG_SEARCH_VISIT_TIME`         |
-| `searchSettings.searchDelay.min`       | string   | `"30sec"`                           | Minimum delay between searches                            | `CONFIG_SEARCH_DELAY_MIN`          |
-| `searchSettings.searchDelay.max`       | string   | `"1min"`                            | Maximum delay between searches                            | `CONFIG_SEARCH_DELAY_MAX`          |
-| `searchSettings.readDelay.min`         | string   | `"30sec"`                           | Minimum delay for reading                                 | `CONFIG_SEARCH_READ_DELAY_MIN`     |
-| `searchSettings.readDelay.max`         | string   | `"1min"`                            | Maximum delay for reading                                 | `CONFIG_SEARCH_READ_DELAY_MAX`     |
+| Setting                                | Type     | Default                             | Description                                                | Docker environment variable        |
+| -------------------------------------- | -------- | ----------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `searchSettings.scrollRandomResults`   | boolean  | `false`                             | Scroll randomly on results                                 | `CONFIG_SEARCH_SCROLL_RANDOM`      |
+| `searchSettings.clickRandomResults`    | boolean  | `false`                             | Click random links                                         | `CONFIG_SEARCH_CLICK_RANDOM`       |
+| `searchSettings.runOnZeroPoints`       | boolean  | `false`                             | Run searches even when no search points remain             | `CONFIG_SEARCH_RUN_ON_ZERO_POINTS` |
+| `searchSettings.maxBonusSearches`      | number   | `110`                               | Max bonus searches per run (when `doBonusSearches` is on)  | `CONFIG_SEARCH_MAX_BONUS_SEARCHES` |
+| `searchSettings.keepAliveSearches.min` | number   | `3`                                 | Minimum casual organic searches (when `doKeepAliveSearch`) | `CONFIG_SEARCH_KEEP_ALIVE_MIN`     |
+| `searchSettings.keepAliveSearches.max` | number   | `5`                                 | Maximum casual organic searches (when `doKeepAliveSearch`) | `CONFIG_SEARCH_KEEP_ALIVE_MAX`     |
+| `searchSettings.parallelSearching`     | boolean  | `true`                              | Run searches in parallel                                   | `CONFIG_SEARCH_PARALLEL`           |
+| `searchSettings.clusterSearch`         | boolean  | `true`                              | Cluster each main topic with Bing suggestions              | `CONFIG_SEARCH_CLUSTER`            |
+| `searchSettings.queryEngines`          | string[] | see [Query sources](#query-sources) | Sources used to build the search query pool                | `CONFIG_SEARCH_QUERY_ENGINES` \*   |
+| `searchSettings.searchResultVisitTime` | string   | `"10sec"`                           | Time to spend on each search result                        | `CONFIG_SEARCH_VISIT_TIME`         |
+| `searchSettings.searchDelay.min`       | string   | `"30sec"`                           | Minimum delay between searches                             | `CONFIG_SEARCH_DELAY_MIN`          |
+| `searchSettings.searchDelay.max`       | string   | `"1min"`                            | Maximum delay between searches                             | `CONFIG_SEARCH_DELAY_MAX`          |
+| `searchSettings.readDelay.min`         | string   | `"30sec"`                           | Minimum delay for reading                                  | `CONFIG_SEARCH_READ_DELAY_MIN`     |
+| `searchSettings.readDelay.max`         | string   | `"1min"`                            | Maximum delay for reading                                  | `CONFIG_SEARCH_READ_DELAY_MAX`     |
 
 Desktop and mobile search quotas are tracked independently from the dashboard counters. All `mobileSearch` entries are combined for the mobile quota, while all `pcSearch` entries are combined for desktop execution; a counter explicitly identified as Edge is also shown separately for diagnostics. The script skips only the completed platform, so a completed `60/60` mobile quota does not prevent an incomplete desktop quota from running. With `parallelSearching` enabled, both incomplete quotas can run concurrently in their own browser contexts.
+
+#### Organic Keep-Alive Searches
+
+When scheduling the script to run periodically throughout the day (e.g. via cron every 1-2 hours), your accounts may have already reached their daily search point caps earlier in the morning.
+By keeping `runOnZeroPoints: false` and enabling `workers.doKeepAliveSearch: true`:
+
+- The script skips heavy search loops that trigger stagnation backoffs on maxed accounts.
+- Instead, it performs a randomized, human-like burst of casual searches (`keepAliveSearches.min` to `keepAliveSearches.max`, 3 to 5 by default).
+- Searches naturally scroll through results and click random links (when `scrollRandomResults` / `clickRandomResults` are enabled).
+- This keeps your browser sessions fresh and simulates realistic periodic activity, protecting Bing Star Bonus trust scores without wasting time or resources.
 
 > [!NOTE]
 > \* Docker `CONFIG_*` array values are comma-separated strings e.g. `"error,warn"`. Regex patterns must be set directly in `config.json`.
@@ -298,18 +311,29 @@ Default:
 
 Opt-in features that may change. Disabled by default.
 
-| Setting                        | Type    | Default | Description                                                             | Docker environment variable              |
-| ------------------------------ | ------- | ------- | ----------------------------------------------------------------------- | ---------------------------------------- |
-| `experimental.apiSearch`       | boolean | `false` | Perform Bing searches over HTTP instead of driving a browser page       | `CONFIG_EXPERIMENTAL_API_SEARCH`         |
-| `experimental.apiSearchOnBing` | boolean | `false` | Complete ExploreOnBing offers over HTTP instead of the browser          | `CONFIG_EXPERIMENTAL_API_SEARCH_ON_BING` |
-| `experimental.blockMedia`      | boolean | `false` | Block post-login browser `image` and `media` requests to reduce traffic | `CONFIG_EXPERIMENTAL_BLOCK_MEDIA`        |
-| `experimental.edgeBrowsing`    | boolean | `false` | Report the 30-minute Edge browsing activity as a background HTTP task   | `CONFIG_EXPERIMENTAL_EDGE_BROWSING`      |
+| Setting                         | Type    | Default | Description                                                             | Docker environment variable              |
+| ------------------------------- | ------- | ------- | ----------------------------------------------------------------------- | ---------------------------------------- |
+| `experimental.apiSearch`        | boolean | `false` | Perform Bing searches over HTTP instead of driving a browser page       | `CONFIG_EXPERIMENTAL_API_SEARCH`         |
+| `experimental.apiSearchOnBing`  | boolean | `false` | Complete ExploreOnBing offers over HTTP instead of the browser          | `CONFIG_EXPERIMENTAL_API_SEARCH_ON_BING` |
+| `experimental.blockMedia`       | boolean | `false` | Block post-login browser `image` and `media` requests to reduce traffic | `CONFIG_EXPERIMENTAL_BLOCK_MEDIA`        |
+| `experimental.edgeBrowsing`     | boolean | `false` | Report the 30-minute Edge browsing activity as a background HTTP task   | `CONFIG_EXPERIMENTAL_EDGE_BROWSING`      |
+| `experimental.aiQueryGenerator` | boolean | `false` | Generate high-quality contextual search queries using an LLM API        | `CONFIG_EXPERIMENTAL_AI_QUERY_GENERATOR` |
+| `experimental.aiBaseUrl`        | string  | `""`    | OpenAI-compatible base URL (e.g. `https://api.groq.com/openai/v1`)      | `CONFIG_EXPERIMENTAL_AI_BASE_URL`        |
+| `experimental.aiApiKey`         | string  | `""`    | API key for LLM query generator                                         | `CONFIG_EXPERIMENTAL_AI_API_KEY`         |
+| `experimental.aiModel`          | string  | `""`    | Model name for query generation (e.g. `openai/gpt-oss-20b`)             | `CONFIG_EXPERIMENTAL_AI_MODEL`           |
 
 When `experimental.blockMedia` is enabled, the automated flow activates it only after authentication has been
 verified and the session has been saved. The manual-login flow keeps media enabled throughout; `npm run open-session` still
 applies the configured blocker immediately because it opens an already-saved session.
 
 When `experimental.edgeBrowsing` is enabled, the task starts before the normal activity sequence and runs as a separate Promise alongside Daily Set, promotions, app activities, and searches. If foreground work finishes first, the account remains open until this Promise settles. Accounts without the promotion, an access token, or remaining Edge work are skipped immediately.
+
+#### Advanced Activity Enhancements
+
+- **Punch Cards & React Flight Stream Handling:** Next.js Server Components transmit modern punchcard structures as chunked React Flight streams (using referenced keys like `"$1"`, `"$2"`, etc.). The script automatically resolves and reconstructs these split objects into fully hydrated quest trees, allowing multi-step punchcards and nested promotions to complete seamlessly.
+- **ExploreOnBing Custom Queries & Auto-Cleanup:** ExploreOnBing merges built-in category queries with any custom queries defined in `config/custom.json` or `src/functions/custom.json`. When a category query succeeds in awarding points, any past failure records for that card in `failed.json` are automatically removed to keep state tidy.
+- **Default Search Engine (14-Day Streak) Support:** Retention activities requiring Bing as the default browser search engine are executed with Bing's `FORM=EDGBS` telemetry parameter to ensure daily streak progress is credited.
+- **Microsoft Rewards App Weekly Automation:** Weekly Xbox / Rewards App punch cards are supported and integrated into the punchcard execution flow.
 
 #### Activity source layout
 

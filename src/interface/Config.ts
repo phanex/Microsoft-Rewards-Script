@@ -37,6 +37,10 @@ export interface ConfigSearchSettings {
     searchResultVisitTime: number | string
     searchDelay: ConfigDelay
     readDelay: ConfigDelay
+    keepAliveSearches?: {
+        min: number
+        max: number
+    }
 }
 
 export interface ConfigDelay {
@@ -73,6 +77,7 @@ export interface ConfigWorkers {
     doReadToEarn: boolean
     doActivateSearchPerk: boolean
     doVisualSearch: boolean
+    doKeepAliveSearch: boolean
 }
 
 export interface ConfigActivities {
