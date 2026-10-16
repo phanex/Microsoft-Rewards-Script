@@ -49,6 +49,9 @@ services:
             #CONFIG_EXPERIMENTAL_EDGE_BROWSING: 'false'
             # Only enable for a TLS-intercepting proxy whose certificate cannot be trusted normally.
             #CONFIG_PROXY_IGNORE_CERTIFICATE_ERRORS: 'false'
+            # Casual organic keep-alive searches when points are already collected
+            #CONFIG_SEARCH_RUN_ON_ZERO_POINTS: 'false'
+            #CONFIG_SEARCH_KEEP_ALIVE: '3,5'
             #... add additional configuration overrides as needed
 
         # ── API mode port mapping ──────────────────────────────────────
