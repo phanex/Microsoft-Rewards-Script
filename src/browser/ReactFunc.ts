@@ -824,6 +824,8 @@ export default class ReactFunc {
             }
             anchors.sort((a, b) => a.at - b.at)
 
+            const chunkMap = this.buildFlightChunkMap(combined)
+
             const byId = new Map<string, ParentQuest>()
             for (let k = 0; k < anchors.length; k++) {
                 const { id, at } = anchors[k]!
@@ -838,10 +840,20 @@ export default class ReactFunc {
                         break
                     }
                 }
-                const region = combined.slice(at, Math.min(next, at + 4000))
+                let region = combined.slice(at, Math.min(next, at + 4000))
+
+                // In Next.js RSC streams, card elements may be referenced via $L<id> chunks (e.g. ["$L82", "$L83"])
+                const refMatches = [...region.matchAll(/\$L([0-9a-fA-F]+)/g)]
+                for (const ref of refMatches) {
+                    const chunk = chunkMap.get(ref[1]!)
+                    if (chunk) {
+                        region += '\n' + chunk
+                    }
+                }
 
                 const title =
                     region.match(/"alt":"((?:[^"\\]|\\.)*)"/)?.[1] ??
+                    region.match(/"text-globalBody2Strong"[^{}]*?"children":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     region.match(/"title":"((?:[^"\\]|\\.)*)"/)?.[1] ??
                     ''
 
@@ -895,6 +907,29 @@ export default class ReactFunc {
         const id = offerId.toLowerCase()
         if (id.includes('pcchild')) return false
         return id.includes('pcparent') || id.includes('punchcard')
+    }
+
+    private buildFlightChunkMap(combined: string): Map<string, string> {
+        const map = new Map<string, string>()
+        const chunkRe = /(?:^|\n)([0-9a-fA-F]+):/g
+        let match: RegExpExecArray | null
+        const indices: { id: string; start: number }[] = []
+
+        while ((match = chunkRe.exec(combined)) !== null) {
+            indices.push({
+                id: match[1]!,
+                start: match.index + (match[0].startsWith('\n') ? 1 : 0) + match[1]!.length + 1
+            })
+        }
+
+        for (let i = 0; i < indices.length; i++) {
+            const cur = indices[i]!
+            const nextStart =
+                i + 1 < indices.length ? indices[i + 1]!.start - (indices[i + 1]!.id.length + 2) : combined.length
+            map.set(cur.id, combined.slice(cur.start, nextStart))
+        }
+
+        return map
     }
 
     // Utils
