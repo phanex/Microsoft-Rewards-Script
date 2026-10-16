@@ -389,7 +389,7 @@ export default class ReactFunc {
                     // In RSC flight streams, shared subtrees (such as the +10 pts badge) are often
                     // deduplicated into reference chunks ($Lxx) and not inlined. Explore on Bing
                     // activities always award 10 points on Rewards.
-                    points = m ? parseInt(m[0], 10) : (isExploreOnBing ? 10 : 0)
+                    points = m ? parseInt(m[0], 10) : isExploreOnBing ? 10 : 0
                 }
 
                 // RSC payloads may embed zero-width chars in rendered text
