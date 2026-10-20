@@ -1,7 +1,7 @@
 {
-  "id": "restore-dashboard-log-compat",
-  "type": "refactor",
-  "status": "new",
-  "created_at": "2026-10-20T19:06:30Z",
-  "updated_at": "2026-10-20T19:06:30Z"
+    "id": "restore-dashboard-log-compat",
+    "type": "refactor",
+    "status": "completed",
+    "created_at": "2026-10-20T19:06:30Z",
+    "updated_at": "2026-10-20T19:12:30Z"
 }

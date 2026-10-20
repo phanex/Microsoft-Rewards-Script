@@ -159,13 +159,34 @@ export class MicrosoftRewardsBot {
     }
 
     public formatPoints(points: number): string {
+        return String(points)
+    }
+
+    public formatCurrency(points: number): string | null {
         const [symbol, rateRaw] = this.config.currency ?? []
         const rate = Number(rateRaw)
         if (symbol && rate > 0) {
             const money = (points / rate).toFixed(2)
-            return `${points} (≈${money} ${symbol})`
+            return `≈${money} ${symbol}`
         }
-        return String(points)
+        return null
+    }
+
+    public logAccountValue(email: string, totalPoints: number, gainedPoints: number): void {
+        const total = this.formatCurrency(totalPoints)
+        const gained = this.formatCurrency(gainedPoints)
+        if (total && gained) {
+            const username = this.utils.getEmailUsername(email)
+            this.logger.info('main', 'VALUE', `Account ${username} | total: ${total} | gained: ${gained}`, 'cyan')
+        }
+    }
+
+    public logTotalValue(totalPoints: number, gainedPoints: number): void {
+        const total = this.formatCurrency(totalPoints)
+        const gained = this.formatCurrency(gainedPoints)
+        if (total && gained) {
+            this.logger.info('main', 'VALUE', `Total: ${total} | gained: ${gained}`, 'cyan')
+        }
     }
 
     async refreshCurrentRewardsContext(reason: string): Promise<boolean> {
@@ -388,6 +409,17 @@ export class MicrosoftRewardsBot {
                     'green'
                 )
 
+                if (this.formatCurrency(0) !== null) {
+                    for (const stat of allAccountStats) {
+                        if (stat.success) {
+                            this.userData.userName = stat.email.split('@')[0] || stat.email
+                            this.logAccountValue(stat.email, stat.finalPoints, stat.collectedPoints)
+                        }
+                    }
+                    this.userData.userName = 'ALL'
+                    this.logTotalValue(totalFinalPoints, totalCollectedPoints)
+                }
+
                 await flushAllWebhooks()
 
                 process.exit(hadWorkerFailure ? 1 : 0)
@@ -516,6 +548,7 @@ export class MicrosoftRewardsBot {
                             `Completed account: ${accountEmail} | pointsGained=${this.formatPoints(collectedPoints)} | previousBalance=${this.formatPoints(accountInitialPoints)} | currentBalance=${this.formatPoints(accountFinalPoints)} | durationSeconds=${durationSeconds}`,
                             'green'
                         )
+                        this.logAccountValue(accountEmail, accountFinalPoints, collectedPoints)
                     }
                 } else {
                     accountStats.push({
@@ -580,6 +613,17 @@ export class MicrosoftRewardsBot {
                 `Completed all accounts | accountsProcessed=${accountStats.length} | pointsGained=${this.formatPoints(totalCollectedPoints)} | previousBalance=${this.formatPoints(totalInitialPoints)} | currentBalance=${this.formatPoints(totalFinalPoints)} | runtimeMinutes=${totalDurationMinutes}`,
                 'green'
             )
+
+            if (this.formatCurrency(0) !== null) {
+                for (const stat of accountStats) {
+                    if (stat.success) {
+                        this.userData.userName = stat.email.split('@')[0] || stat.email
+                        this.logAccountValue(stat.email, stat.finalPoints, stat.collectedPoints)
+                    }
+                }
+                this.userData.userName = 'ALL'
+                this.logTotalValue(totalFinalPoints, totalCollectedPoints)
+            }
 
             await flushAllWebhooks()
             process.exit(0)
