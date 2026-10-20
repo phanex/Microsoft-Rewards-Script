@@ -81,6 +81,11 @@ export class UrlReward extends BaseActivity {
                 }
             )
 
+            const destUrl = live.destination || promotion.destinationUrl
+            if (destUrl && (destUrl.includes('rewards.bing.com/redirect') || destUrl.includes('channel=urlreward'))) {
+                await this.bot.browser.func.followRewardRedirect(destUrl, 'URL-REWARD')
+            }
+
             if (!acknowledged) {
                 this.bot.logger.warn(
                     this.bot.isMobile,

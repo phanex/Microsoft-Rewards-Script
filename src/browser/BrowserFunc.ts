@@ -612,6 +612,44 @@ export default class BrowserFunc {
         return null
     }
 
+    async followRewardRedirect(url: string, logTag = 'REDIRECT'): Promise<boolean> {
+        const page = this.getActivePage()
+        if (!page) {
+            this.bot.logger.warn(this.bot.isMobile, logTag, 'Cannot follow redirect: active browser page unavailable')
+            return false
+        }
+
+        try {
+            this.bot.logger.debug(this.bot.isMobile, logTag, `Following reward redirect | url=${url}`)
+            const response = await page.request.get(url, {
+                maxRedirects: 10,
+                timeout: 30000,
+                headers: {
+                    'sec-fetch-dest': 'document',
+                    'sec-fetch-mode': 'navigate',
+                    'sec-fetch-site': 'same-origin',
+                    'sec-fetch-user': '?1',
+                    'upgrade-insecure-requests': '1'
+                }
+            })
+            await this.syncActiveCookies(page, logTag)
+            const ok = response.ok() || (response.status() >= 300 && response.status() < 400)
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                logTag,
+                `Followed redirect | status=${response.status()} | ok=${ok}`
+            )
+            return ok
+        } catch (error) {
+            this.bot.logger.warn(
+                this.bot.isMobile,
+                logTag,
+                `Failed following redirect | url=${url} | error=${error instanceof Error ? error.message : String(error)}`
+            )
+            return false
+        }
+    }
+
     private getCachedCookies(explicitCookies?: Cookie[], targetUrl?: string): Cookie[] {
         const cookies = explicitCookies ?? (this.bot.isMobile ? this.bot.cookies.mobile : this.bot.cookies.desktop)
         return targetUrl ? this.filterCookiesForUrl(cookies, targetUrl) : cookies

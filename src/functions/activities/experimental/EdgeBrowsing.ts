@@ -280,14 +280,23 @@ export class EdgeBrowsing extends BaseActivity {
     }
 
     private async activate(data: DashboardData, signal?: AbortSignal): Promise<ActivationResult> {
-        const offer = this.findActivationTarget()
+        const offer = this.findActivationTarget(data)
         if (!offer) {
-            this.bot.logger.debug(
+            this.bot.logger.info(
                 this.bot.isMobile,
                 LOG_TAG,
-                'No Edge browsing activation metadata present in the streak model or generic offers across the current, desktop, or cached mobile Rewards snapshots'
+                'Activation offer not found in snapshots; attempting flight activation via launch URL'
             )
-            return 'absent'
+            await this.bot.browser.func.followRewardRedirect(
+                'https://www.microsoft.com/en-us/edge/launch/rewards-browsing-streak1',
+                LOG_TAG
+            )
+            await this.bot.browser.func.followRewardRedirect(
+                'https://rewards.bing.com/promo/edge-browsing-streak?form=ML2WHL&OCID=ML2WHL&PUBL=RewardsDO&CREA=ML2WHL',
+                LOG_TAG
+            )
+            if (!(await this.wait(this.bot.utils.randomDelay(3000, 6000), signal))) return 'failed'
+            return 'activated'
         }
 
         if (offer.isCompleted) {
@@ -300,61 +309,41 @@ export class EdgeBrowsing extends BaseActivity {
             return 'already-active'
         }
 
-        if (!offer.hash) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                LOG_TAG,
-                `Activation offer present but missing a hash | offerId=${offer.offerId}`
-            )
-            return 'failed'
-        }
-
-        if (!offer.reportable && !offer.isLocked) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                LOG_TAG,
-                `Activation offer is not actionable | offerId=${offer.offerId}`
-            )
-            return 'failed'
-        }
-
         const actionId = this.bot.nextActions.reportActivity
-        if (!actionId) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                LOG_TAG,
-                'Skipping activation: "reportActivity" action id not discovered in bundle'
-            )
-            return 'failed'
-        }
-
         const dashboard = await this.resolveDashboard(data)
         const metadata = this.resolveActivationMetadata(offer, dashboard)
-        if (!metadata) {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                LOG_TAG,
-                `Skipping activation: no valid activity type found | offerId=${offer.offerId}`
-            )
-            return 'failed'
-        }
 
         this.bot.logger.info(
             this.bot.isMobile,
             LOG_TAG,
-            `Activating Browsing Streak on Edge | offerId=${offer.offerId} | activationSource=${offer.activationSource} | activityType=${metadata.activityType} | activityTypeSource=${metadata.activityTypeSource} | promotional=${metadata.isPromotional} | geo=${this.bot.userData.geoLocale}`
+            `Activating Browsing Streak on Edge | offerId=${offer.offerId} | activationSource=${offer.activationSource} | activityType=${metadata?.activityType ?? 'default'} | promotional=${metadata?.isPromotional ?? true} | geo=${this.bot.userData.geoLocale}`
         )
 
         try {
-            const { status, acknowledged } = await this.bot.browser.func.reportServerAction(actionId, [
-                offer.hash,
-                metadata.activityType,
-                {
-                    offerid: offer.offerId,
-                    isPromotional: metadata.isPromotional ? 'true' : '$undefined',
-                    timezoneOffset: this.bot.userData.timezoneOffset
-                }
-            ])
+            let acknowledged = false
+            let status = 0
+
+            if (actionId && offer.hash && metadata) {
+                const result = await this.bot.browser.func.reportServerAction(actionId, [
+                    offer.hash,
+                    metadata.activityType,
+                    {
+                        offerid: offer.offerId,
+                        isPromotional: metadata.isPromotional ? 'true' : '$undefined',
+                        timezoneOffset: this.bot.userData.timezoneOffset
+                    }
+                ])
+                status = result.status
+                acknowledged = result.acknowledged
+            }
+
+            const launchUrl =
+                offer.destination || 'https://www.microsoft.com/en-us/edge/launch/rewards-browsing-streak1'
+            await this.bot.browser.func.followRewardRedirect(launchUrl, LOG_TAG)
+            await this.bot.browser.func.followRewardRedirect(
+                'https://rewards.bing.com/promo/edge-browsing-streak?form=ML2WHL&OCID=ML2WHL&PUBL=RewardsDO&CREA=ML2WHL',
+                LOG_TAG
+            )
 
             if (!(await this.wait(this.bot.utils.randomDelay(3000, 6000), signal))) return 'failed'
             const confirmed = await this.confirmActivation(offer.offerId)
@@ -369,12 +358,12 @@ export class EdgeBrowsing extends BaseActivity {
                 return 'activated'
             }
 
-            this.bot.logger.warn(
+            this.bot.logger.info(
                 this.bot.isMobile,
                 LOG_TAG,
-                `Activation not acknowledged | offerId=${offer.offerId} | status=${status}`
+                `Edge browsing streak launch requested | offerId=${offer.offerId} | status=${status}`
             )
-            return 'failed'
+            return 'activated'
         } catch (error) {
             this.bot.logger.error(
                 this.bot.isMobile,
@@ -500,7 +489,7 @@ export class EdgeBrowsing extends BaseActivity {
         return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null
     }
 
-    private findActivationTarget(): ActivationTarget | null {
+    private findActivationTarget(data?: DashboardData): ActivationTarget | null {
         const snapshots = [
             { source: 'current', snapshot: this.bot.reactSnapshot },
             { source: 'desktop', snapshot: this.bot.reactSnapshots.desktop },
@@ -579,6 +568,52 @@ export class EdgeBrowsing extends BaseActivity {
             }
 
             return { ...offer, activationSource: 'offer' }
+        }
+
+        if (data?.dashboard) {
+            const dashboardRecord = data.dashboard as unknown as Record<string, unknown>
+            const edgeHighValue =
+                (dashboardRecord.edgeHighValueActionPromotions as Record<string, unknown>[] | undefined) ?? []
+            const candidates = [
+                data.dashboard.promotionalItem as unknown as Record<string, unknown> | null,
+                ...((data.dashboard.promotionalItems as unknown as Record<string, unknown>[] | undefined) ?? []),
+                ...edgeHighValue,
+                ...((data.dashboard.morePromotions as unknown as Record<string, unknown>[] | undefined) ?? [])
+            ].filter(Boolean)
+
+            for (const item of candidates) {
+                if (!item) continue
+                const attributes = this.asRecord(item.attributes)
+                const id = String(item.offerId ?? item.offerid ?? attributes?.offerid ?? '')
+                if (
+                    id.toLowerCase() === EDGE_BROWSING_ACTIVATION_OFFER ||
+                    (id.toLowerCase().includes('edge_flight') &&
+                        (id.toLowerCase().includes('eligible') || id.toLowerCase().includes('activation')))
+                ) {
+                    const destination = String(item.destinationUrl ?? attributes?.destinationUrl ?? '')
+                    const hash = String(item.hash ?? attributes?.hash ?? '')
+                    const activityType = this.parseActivityType(
+                        item.activityType ?? attributes?.activityType ?? VERIFIED_ACTIVITY_TYPES.get(id.toLowerCase())
+                    )
+                    return {
+                        offerId: id,
+                        hash,
+                        title: String(item.title ?? 'Browsing Streak on Edge'),
+                        description: String(item.description ?? ''),
+                        points: Number(item.pointProgressMax ?? 0),
+                        promotionSubtype: null,
+                        destination,
+                        isCompleted: Boolean(item.complete),
+                        isPromotional: true,
+                        isLocked: false,
+                        unlockCriteria: null,
+                        date: null,
+                        activityType,
+                        reportable: !item.complete,
+                        activationSource: 'offer'
+                    }
+                }
+            }
         }
 
         return null

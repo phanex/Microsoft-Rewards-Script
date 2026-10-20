@@ -260,6 +260,20 @@ export class PunchCards extends BaseActivity {
     }
 
     private async reportQuestChild(child: QuestChild, parentId: string): Promise<void> {
+        let redirectOk = false
+        if (child.href) {
+            const redirectUrl = child.href.startsWith('http')
+                ? child.href
+                : `https://rewards.bing.com${child.href.startsWith('/') ? '' : '/'}${child.href}`
+            this.bot.logger.info(
+                this.bot.isMobile,
+                'PUNCHCARD',
+                `Following quest redirect URL | offerId=${child.offerId} | url=${redirectUrl}`
+            )
+            redirectOk = await this.bot.browser.func.followRewardRedirect(redirectUrl, 'PUNCHCARD')
+            await this.bot.utils.wait(this.bot.utils.randomDelay(2000, 4000))
+        }
+
         const actionId = this.bot.nextActions.reportActivity
         if (!actionId) {
             this.bot.logger.warn(
@@ -270,7 +284,9 @@ export class PunchCards extends BaseActivity {
             return
         }
         if (!child.hash) {
-            this.bot.logger.warn(this.bot.isMobile, 'PUNCHCARD', `Skip ${child.offerId}: no live hash`)
+            if (!child.href) {
+                this.bot.logger.warn(this.bot.isMobile, 'PUNCHCARD', `Skip ${child.offerId}: no live hash`)
+            }
             return
         }
 
@@ -306,8 +322,8 @@ export class PunchCards extends BaseActivity {
                 this.bot.isMobile,
                 'PUNCHCARD',
                 `Reported child | offerId=${child.offerId} | status=${status} | acknowledged=${acknowledged}` +
-                    ` | pointsGained=${gained} | currentBalance=${newBalance}`,
-                gained > 0 || acknowledged ? 'green' : undefined
+                    `${child.href ? ` | redirectOk=${redirectOk}` : ''} | pointsGained=${gained} | currentBalance=${newBalance}`,
+                gained > 0 || acknowledged || redirectOk ? 'green' : undefined
             )
         } catch (error) {
             this.bot.logger.error(

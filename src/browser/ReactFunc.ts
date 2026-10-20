@@ -25,6 +25,7 @@ export interface QuestChild {
     isLocked: boolean
     isDisabled: boolean
     reportable: boolean
+    href?: string | null
 }
 
 export interface ParentQuest {
@@ -781,6 +782,41 @@ export default class ReactFunc {
             const isCompleted = ((obj.isCompleted ?? obj.complete) as boolean | undefined) === true
             const isLocked = (obj.isLocked as boolean | undefined) === true
             const isDisabled = (obj.isDisabled as boolean | undefined) === true
+            const rawHref =
+                (obj.href as string | undefined) ??
+                (obj.destinationUrl as string | undefined) ??
+                (obj.url as string | undefined) ??
+                null
+
+            let resolvedHref: string | null = rawHref
+            if (!resolvedHref) {
+                const redirectMatches = Array.from(
+                    combined.matchAll(/https:\/\/rewards\.bing\.com\/redirect\?[^"'\\s<>]+/gi),
+                    m => m[0]
+                )
+                for (const link of redirectMatches) {
+                    if (link.includes(offerId) || (hash && link.includes(hash))) {
+                        resolvedHref = link
+                        break
+                    }
+                }
+                if (!resolvedHref) {
+                    const campaignCore = offerId
+                        .replace(/^(?:WW_)?(?:pcchild\d+[a-z]*_)?(?:urlreward_)?/i, '')
+                        .replace(/_punchcard$/i, '')
+                    if (campaignCore.length > 3) {
+                        for (const link of redirectMatches) {
+                            if (link.toLowerCase().includes(campaignCore.toLowerCase())) {
+                                resolvedHref = link
+                                break
+                            }
+                        }
+                    }
+                }
+                if (!resolvedHref && redirectMatches.length === 1 && !isLocked) {
+                    resolvedHref = redirectMatches[0] ?? null
+                }
+            }
 
             const isRewardsApp =
                 offerId.toLowerCase().includes('rewardsapp') ||
@@ -795,7 +831,8 @@ export default class ReactFunc {
                 isCompleted,
                 isLocked,
                 isDisabled,
-                reportable
+                reportable,
+                href: resolvedHref ?? null
             })
         }
 

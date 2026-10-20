@@ -5,11 +5,15 @@ import { toBasePromotion } from './offerAdapter'
 
 export class MorePromotions extends BaseActivity {
     public async run(data: DashboardData): Promise<void> {
+        const dashboardRecord = data.dashboard as unknown as Record<string, unknown>
+        const edgeHighValue = (dashboardRecord?.edgeHighValueActionPromotions as BasePromotion[] | undefined) ?? []
         const promotions = [
             ...new Map(
                 [
                     ...(data.dashboard.morePromotions ?? []),
-                    ...(data.dashboard.morePromotionsWithoutPromotionalItems ?? [])
+                    ...(data.dashboard.morePromotionsWithoutPromotionalItems ?? []),
+                    ...(data.dashboard.promotionalItems ?? []),
+                    ...edgeHighValue
                 ]
                     .filter(Boolean)
                     .map(promotion => [promotion.offerId, promotion as BasePromotion] as const)
@@ -45,7 +49,8 @@ export class MorePromotions extends BaseActivity {
     }
 
     private isActionable(promotion: BasePromotion): boolean {
-        if (promotion.complete || promotion.pointProgressMax <= 0) return false
+        if (promotion.complete) return false
+        if (this.bot.config.skipNonPointTasks && promotion.pointProgressMax <= 0) return false
         const isRewardsApp =
             promotion.exclusiveLockedFeatureCategory?.toLowerCase() === 'rewardsapp' ||
             promotion.offerId?.toLowerCase().includes('rewardsapp')
@@ -53,7 +58,12 @@ export class MorePromotions extends BaseActivity {
         if (!promotion.promotionType) return false
         if (promotion.priority < 0 && promotion.exclusiveLockedFeatureStatus !== 'unlocked' && !isRewardsApp)
             return false
-        return this.getAttribute(promotion, 'promotional') !== 'True'
+        if (
+            this.bot.config.skipNonPointTasks &&
+            String(this.getAttribute(promotion, 'promotional') ?? '').toLowerCase() === 'true'
+        )
+            return false
+        return true
     }
 
     private getAttribute(promotion: BasePromotion, key: string): unknown {
