@@ -204,7 +204,7 @@ export class MicrosoftRewardsBot {
         const gained = this.formatCurrency(gainedPoints)
         if (total && gained) {
             const username = this.utils.getEmailUsername(email)
-            this.emitValueLine(`[VALUE] ${username}: total ${total} (+${gained})`)
+            this.emitValueLine(`[VALUE] ${username}: ${total} (+${gained})`)
         }
     }
 
@@ -212,7 +212,7 @@ export class MicrosoftRewardsBot {
         const total = this.formatCurrency(totalPoints)
         const gained = this.formatCurrency(gainedPoints)
         if (total && gained) {
-            this.emitValueLine(`[VALUE] TOTAL:  total ${total} (+${gained})`)
+            this.emitValueLine(`[VALUE] TOTAL:  ${total} (+${gained})`)
         }
     }
 
