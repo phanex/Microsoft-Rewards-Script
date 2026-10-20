@@ -27,6 +27,7 @@ type LoginState =
     | 'EMAIL_VERIFICATION_INPUT'
     | 'RECOVERY_EMAIL_INPUT'
     | 'ACCOUNT_LOCKED'
+    | 'REMIND_PROOFS'
     | 'ERROR_ALERT'
     | '2FA_TOTP'
     | 'LOGIN_PASSWORDLESS'
@@ -195,6 +196,11 @@ export class Login {
             return 'ACCOUNT_LOCKED'
         }
 
+        if (hostname.includes('live.com') && url.pathname.toLowerCase().includes('/proofs/remind')) {
+            this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'Security proofs reminder page detected')
+            return 'REMIND_PROOFS'
+        }
+
         if (hostname === 'bing.com' || hostname.endsWith('.bing.com') || hostname === 'account.microsoft.com') {
             this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'On Bing/rewards/account page, assuming logged in')
             return 'LOGGED_IN'
@@ -296,6 +302,7 @@ export class Login {
 
         const priorities: LoginState[] = [
             'ACCOUNT_LOCKED',
+            'REMIND_PROOFS',
             'PASSKEY_VIDEO',
             'PASSKEY_ERROR',
             'KMSI_PROMPT',
@@ -746,6 +753,72 @@ export class Login {
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'TOTP 2FA authentication required')
                 await this.totp2FALogin.handle(page, account.totpSecret)
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'TOTP 2FA handler completed successfully')
+                return true
+            }
+
+            // Microsoft Security Info / Proofs reminder ("Is your security info still accurate?")
+            case 'REMIND_PROOFS': {
+                this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Handling security proofs reminder')
+
+                const candidateSelectors = [
+                    '#iLooksGood',
+                    '#idLooksGood',
+                    'input[name="iLooksGood"]',
+                    'input[value*="Looks good" i]',
+                    'button:has-text("Looks good")',
+                    '#iShowSkip',
+                    '#idBtn_Skip',
+                    'a#iShowSkip',
+                    '#idSIButton9',
+                    'button[data-testid="primaryButton"]',
+                    'button.btn-primary',
+                    'input[type="submit"]'
+                ]
+
+                let clicked = false
+                for (const selector of candidateSelectors) {
+                    const visible = await page
+                        .locator(selector)
+                        .first()
+                        .isVisible()
+                        .catch(() => false)
+                    if (visible) {
+                        clicked = await this.bot.browser.utils.ghostClick(page, selector)
+                        if (clicked) {
+                            this.bot.logger.info(
+                                this.bot.isMobile,
+                                'LOGIN',
+                                `Dismissed proofs reminder using selector: ${selector}`
+                            )
+                            break
+                        }
+                    }
+                }
+
+                if (!clicked) {
+                    const fallbackButton = page
+                        .locator('button, input[type="button"], input[type="submit"], a')
+                        .filter({ hasText: /Looks good|Remind me later|Skip|Next|Continue|Все правильно|Нагадати/i })
+                        .first()
+                    if (await fallbackButton.isVisible().catch(() => false)) {
+                        await fallbackButton.click().catch(() => {})
+                        this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Dismissed proofs reminder via text match')
+                    }
+                }
+
+                await this.waitForIdle(page, 'after proofs reminder dismissal')
+
+                if (page.url().toLowerCase().includes('/proofs/remind')) {
+                    try {
+                        const currentUrl = new URL(page.url())
+                        const ru = currentUrl.searchParams.get('ru')
+                        if (ru) {
+                            this.bot.logger.info(this.bot.isMobile, 'LOGIN', `Navigating to proofs return URL: ${ru}`)
+                            await page.goto(ru, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {})
+                        }
+                    } catch {}
+                }
+
                 return true
             }
 
