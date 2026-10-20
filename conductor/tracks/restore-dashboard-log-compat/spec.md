@@ -9,13 +9,12 @@ Restore original upstream log formatting in `Microsoft Rewards Script` to mainta
 1. **Upstream Compatibility**:
     - `ACCOUNT-END`, `RUN-END`, `FLOW`, and `POINTS` lines must contain purely integer values for numeric point fields (`pointsGained`, `previousBalance`, `currentBalance`, `total`) without parenthesized additions `(≈X.XX €)`.
 2. **Dedicated Account Value Logging**:
-    - When `config.currency` is configured, log an immediate concise value line when an account completes:
-      `[VALUE] Account <username> | total: ≈X.XX <symbol> | gained: ≈Y.YY <symbol>`
-    - Use username (email prefix) instead of full email address to keep logs clean and readable.
+    - When `config.currency` is configured, log a clean, concise value line directly without logger envelope boilerplate (`[date] [user] [INFO] MAIN [VALUE]`):
+      `[VALUE] <username>: total ≈X.XX <symbol> (+≈Y.YY <symbol>)`
 3. **Dedicated Run End Summary**:
-    - At the conclusion of the run (both in single-cluster and multi-cluster modes), list the `[VALUE]` lines for all processed accounts.
+    - At the conclusion of the run (both in single-cluster and multi-cluster modes), list clean `[VALUE]` lines for all processed accounts.
     - Conclude with a single grand total line:
-      `[VALUE] Total: ≈X.XX <symbol> | gained: ≈Y.YY <symbol>`
+      `[VALUE] TOTAL:  total ≈X.XX <symbol> (+≈Y.YY <symbol>)`
 4. **Configuration & Testing**:
     - Retain `currency` configuration settings, validator schemas, and environment variable overrides (`CONFIG_CURRENCY`).
     - Ensure all `logParser.test.js` tests pass without regressions.

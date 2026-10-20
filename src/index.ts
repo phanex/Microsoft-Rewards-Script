@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import cluster, { Worker } from 'cluster'
+import chalk from 'chalk'
 import type { BrowserContext, Cookie, Page } from 'patchright'
 import pkg from '../package.json'
 
@@ -172,12 +173,38 @@ export class MicrosoftRewardsBot {
         return null
     }
 
+    private emitValueLine(msg: string): void {
+        console.log(chalk.cyan(msg))
+
+        const { webhook } = this.config
+        const hasWebhook = Boolean(
+            (webhook.discord?.enabled && webhook.discord.url) ||
+            (webhook.ntfy?.enabled && webhook.ntfy.url) ||
+            (webhook.telegram?.enabled && webhook.telegram.botToken && webhook.telegram.chatId)
+        )
+        if (!hasWebhook) return
+
+        if (cluster.isPrimary) {
+            if (webhook.discord?.enabled && webhook.discord.url) {
+                sendDiscord(webhook.discord.url, msg, 'info')
+            }
+            if (webhook.ntfy?.enabled && webhook.ntfy.url) {
+                sendNtfy(webhook.ntfy, msg, 'info')
+            }
+            if (webhook.telegram?.enabled && webhook.telegram.botToken && webhook.telegram.chatId) {
+                sendTelegram(webhook.telegram, msg, 'info')
+            }
+        } else {
+            process.send?.({ __ipcLog: { content: msg, level: 'info' } })
+        }
+    }
+
     public logAccountValue(email: string, totalPoints: number, gainedPoints: number): void {
         const total = this.formatCurrency(totalPoints)
         const gained = this.formatCurrency(gainedPoints)
         if (total && gained) {
             const username = this.utils.getEmailUsername(email)
-            this.logger.info('main', 'VALUE', `Account ${username} | total: ${total} | gained: ${gained}`, 'cyan')
+            this.emitValueLine(`[VALUE] ${username}: total ${total} (+${gained})`)
         }
     }
 
@@ -185,7 +212,7 @@ export class MicrosoftRewardsBot {
         const total = this.formatCurrency(totalPoints)
         const gained = this.formatCurrency(gainedPoints)
         if (total && gained) {
-            this.logger.info('main', 'VALUE', `Total: ${total} | gained: ${gained}`, 'cyan')
+            this.emitValueLine(`[VALUE] TOTAL:  total ${total} (+${gained})`)
         }
     }
 
@@ -412,11 +439,9 @@ export class MicrosoftRewardsBot {
                 if (this.formatCurrency(0) !== null) {
                     for (const stat of allAccountStats) {
                         if (stat.success) {
-                            this.userData.userName = stat.email.split('@')[0] || stat.email
                             this.logAccountValue(stat.email, stat.finalPoints, stat.collectedPoints)
                         }
                     }
-                    this.userData.userName = 'ALL'
                     this.logTotalValue(totalFinalPoints, totalCollectedPoints)
                 }
 
@@ -617,11 +642,9 @@ export class MicrosoftRewardsBot {
             if (this.formatCurrency(0) !== null) {
                 for (const stat of accountStats) {
                     if (stat.success) {
-                        this.userData.userName = stat.email.split('@')[0] || stat.email
                         this.logAccountValue(stat.email, stat.finalPoints, stat.collectedPoints)
                     }
                 }
-                this.userData.userName = 'ALL'
                 this.logTotalValue(totalFinalPoints, totalCollectedPoints)
             }
 

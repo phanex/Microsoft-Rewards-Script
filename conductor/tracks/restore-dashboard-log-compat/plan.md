@@ -7,8 +7,8 @@
 
 ## Phase 2: Implement Concise [VALUE] Log Lines
 
-- [x] Task 2.1: Emit `[VALUE] Account <username> | total: <balance> | gained: <gained>` immediately upon completion of each account.
-- [x] Task 2.2: In the final run summary (both single-cluster and multi-cluster master), output `[VALUE]` lines for all accounts followed by `[VALUE] Total: <balance> | gained: <gained>`.
+- [x] Task 2.1: Emit `[VALUE] <username>: total <balance> (+<gained>)` cleanly without logger envelope immediately upon completion of each account.
+- [x] Task 2.2: In the final run summary (both single-cluster and multi-cluster master), output `[VALUE]` lines for all accounts followed by `[VALUE] TOTAL:  total <balance> (+<gained>)`.
 
 ## Phase 3: Verification & Quality Gates
 
