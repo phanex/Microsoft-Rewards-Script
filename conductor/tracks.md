@@ -2,7 +2,7 @@
 
 ## Active Tracks
 
-- [restore-dashboard-log-compat](./tracks/restore-dashboard-log-compat/index.md): Restore Dashboard Compatibility & Add Dedicated Value Logging (In Progress)
+- [~] [restore-dashboard-log-compat](./tracks/restore-dashboard-log-compat/index.md): Restore Dashboard Compatibility & Add Dedicated Value Logging (In Progress)
 
 ## Completed Tracks
 
