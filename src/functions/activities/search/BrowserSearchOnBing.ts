@@ -154,7 +154,7 @@ export class SearchOnBing extends BaseActivity {
             }
         }
 
-        await this.ensureSearchReady(page)
+        await this.ensureSearchReady(page, promotion.destinationUrl)
 
         let lastBalance = this.oldBalance
 
@@ -163,7 +163,7 @@ export class SearchOnBing extends BaseActivity {
                 this.bot.logger.debug(this.bot.isMobile, 'SEARCH-ON-BING-SEARCH', `Processing query | query="${query}"`)
 
                 await this.bot.browser.func.synchronizeActiveBrowserCookies('SEARCH-ON-BING-COOKIE-SEED', true)
-                await this.typeSearch(page, query)
+                await this.typeSearch(page, query, promotion.destinationUrl)
 
                 await this.bot.utils.wait(this.bot.utils.randomDelay(5000, 7000))
 
@@ -236,17 +236,18 @@ export class SearchOnBing extends BaseActivity {
         )
     }
 
-    private async ensureSearchReady(page: Page) {
+    private async ensureSearchReady(page: Page, destinationUrl?: string) {
         const searchBox = page.locator('#sb_form_q')
         if (await searchBox.isVisible().catch(() => false)) return
 
-        await page.goto(URLs.bing.origin)
+        const targetUrl = destinationUrl && destinationUrl.includes('bing.com') ? destinationUrl : URLs.bing.origin
+        await page.goto(targetUrl)
         await page.waitForLoadState('domcontentloaded', { timeout: 8000 }).catch(() => {})
         await this.bot.browser.utils.tryDismissAllMessages(page)
     }
 
-    private async typeSearch(page: Page, query: string) {
-        await this.ensureSearchReady(page)
+    private async typeSearch(page: Page, query: string, destinationUrl?: string) {
+        await this.ensureSearchReady(page, destinationUrl)
 
         const selector = '#sb_form_q'
         const searchBox = page.locator(selector)

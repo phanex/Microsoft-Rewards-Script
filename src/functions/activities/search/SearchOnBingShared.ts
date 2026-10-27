@@ -119,8 +119,8 @@ export async function getSearchOnBingQueries(
                         if (!act?.title || !Array.isArray(act.queries)) continue
                         const existing = mergedCustomMap.get(act.title)
                         if (existing) {
-                            // Merge and deduplicate queries
-                            const combined = [...new Set([...existing.queries, ...act.queries])]
+                            // Merge and deduplicate queries, prioritizing higher-priority sources (processed later)
+                            const combined = [...new Set([...act.queries, ...existing.queries])]
                             mergedCustomMap.set(act.title, { ...existing, queries: combined })
                         } else {
                             mergedCustomMap.set(act.title, { ...act })

@@ -128,8 +128,8 @@
             "affordable flights to New York",
             "best budget airlines",
             "flights to Dubai",
-            "Flug buchen billig",
-            "Flugangebote aktuell"
+            "flights to London",
+            "Flug nach London"
         ]
     },
     {
@@ -216,11 +216,16 @@
     {
         "title": "ENUS_jobs_exploreonbing_activation_Evergreen",
         "queries": [
-            "Offene Stellen BMW",
-            "Jobs bei Google München",
-            "Homeoffice Jobs Quereinsteiger",
-            "Stellenangebote Frankfurt aktuell",
-            "Softwareentwickler Stellenanzeigen"
+            "Jobs bei BMW",
+            "Jobs bei Siemens",
+            "Jobs bei Google",
+            "Jobs bei Microsoft",
+            "Jobs bei Volkswagen",
+            "Jobs bei SAP",
+            "BMW Jobs",
+            "Siemens Jobs",
+            "Google Jobs",
+            "Apple Jobs"
         ]
     },
     {
@@ -244,10 +249,14 @@
     {
         "title": "ENUS_hotel_exploreonbing_activation_Evergreen",
         "queries": [
-            "Hotelpreise Berlin Mitte buchen",
-            "Günstige Hotels Hamburg Hafen",
-            "Wellnesshotel Bayern Angebote",
-            "Hotel Übernachtung München buchen"
+            "Hotel Berlin",
+            "Hotel München",
+            "Hotel Hamburg",
+            "Hotels in Köln",
+            "Hotel Frankfurt",
+            "Hotels in Berlin",
+            "Hotel Paris",
+            "Hotels in London"
         ]
     },
     {
@@ -300,12 +309,16 @@
     {
         "title": "ENUS_flight_exploreonbing_activation_Evergreen",
         "queries": [
-            "Flug Frankfurt Mallorca buchen",
-            "Lufthansa Flugstatus aktuell",
-            "Billige Flüge Berlin London",
-            "Flugsuche Last Minute Angebote",
-            "Flugplan Flughafen Frankfurt",
-            "Flüge buchen Skyscanner"
+            "Flug London",
+            "Flug nach London",
+            "Flug Paris",
+            "Flug nach Mallorca",
+            "Flug Rom",
+            "Flug Berlin London",
+            "Flug Wien",
+            "flights to London",
+            "flights to Paris",
+            "Flug München Mallorca"
         ]
     },
     {
